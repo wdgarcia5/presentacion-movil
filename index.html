@@ -1,0 +1,2310 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>Aprehensión Cognitiva · Ciencias Fácticas · Horizontal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Color Emoji', system-ui, sans-serif;
+            background: #cacaca;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #2a2a2a;
+        }
+
+        /* Overlay para orientación vertical */
+        #orientation-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0b1a2e;
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            color: white;
+            font-size: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        #orientation-overlay span {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (orientation: portrait) and (max-width: 900px) {
+            #orientation-overlay {
+                display: flex;
+            }
+
+            .presentation,
+            .nav-arrow,
+            .slide-counter,
+            .progress-bar,
+            #neuralCanvas {
+                display: none !important;
+            }
+        }
+
+        #neuralCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* En móvil, el canvas puede ralentizar, lo desactivamos */
+        @media (max-width: 900px) {
+            #neuralCanvas {
+                display: none;
+            }
+
+            body {
+                background: #cacaca;
+            }
+        }
+
+        .presentation {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 5;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            /* Centrado vertical en horizontal */
+            align-items: center;
+            padding: 1rem 2rem;
+            /* Menos padding vertical, más horizontal */
+            opacity: 0;
+            visibility: hidden;
+            transform: scale(0.96) translateX(30px);
+            transition: opacity 0.6s cubic-bezier(0.23, 1, 0.32, 1),
+                transform 0.7s cubic-bezier(0.23, 1, 0.32, 1),
+                visibility 0.6s;
+            backdrop-filter: blur(2px);
+            overflow-y: auto;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: scale(1) translateX(0);
+        }
+
+        .slide.exit-left {
+            transform: scale(0.94) translateX(-40px);
+            opacity: 0;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2563eb, #7c3aed);
+            width: 0%;
+            z-index: 100;
+            transition: width 0.3s ease;
+        }
+
+        .nav-arrow {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 40px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            box-shadow: none;
+            transition: background 0.2s, transform 0.15s;
+            z-index: 50;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-arrow svg {
+            width: 22px;
+            height: 22px;
+            stroke: #475569;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .nav-arrow:hover {
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .nav-arrow:active {
+            background: rgba(37, 99, 235, 0.2);
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .nav-arrow:active svg {
+            stroke: #2563eb;
+        }
+
+        .nav-arrow.prev {
+            left: 6px;
+        }
+
+        .nav-arrow.next {
+            right: 6px;
+        }
+
+        .nav-dots {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 12px 24px;
+            border-radius: 40px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 60;
+        }
+
+        .nav-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .nav-dot.active {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            transform: scale(1.5);
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            color: rgba(0, 0, 0, 0.5);
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 8px 16px;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            z-index: 55;
+        }
+
+        .brain-emoji {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            font-size: 4rem;
+            z-index: 20;
+            pointer-events: none;
+            opacity: 0.8;
+            animation: brainPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes brainPulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Ajustes específicos para horizontal en móvil */
+        @media (max-width: 900px) and (orientation: landscape) {
+            .slide {
+                padding: 0.5rem 2rem;
+                justify-content: center;
+            }
+
+            h1 {
+                font-size: clamp(1.8rem, 5vw, 2.5rem) !important;
+            }
+
+            h2 {
+                font-size: clamp(1.6rem, 4vw, 2.2rem) !important;
+            }
+
+            h3 {
+                font-size: clamp(1.2rem, 3.5vw, 1.8rem) !important;
+            }
+
+            p,
+            li {
+                font-size: 0.9rem !important;
+            }
+
+            .fundamento-item,
+            .slide div[style*="border-left"] {
+                padding: 0.8rem !important;
+            }
+
+            .nav-arrow {
+                width: 34px;
+                height: 50px;
+            }
+
+            .brain-emoji {
+                font-size: 3rem;
+                bottom: 10px;
+                left: 10px;
+            }
+
+            .slide[data-slide="0"] img[alt="Logo UC"],
+            .slide[data-slide="0"] img[alt="Logo Postgrado"] {
+                width: 50px !important;
+                top: 10% !important;
+            }
+
+            .slide div[style*="display: grid"] {
+                gap: 0.8rem !important;
+            }
+
+            .slide img[style*="width: 55px"] {
+                width: 40px !important;
+                height: 40px !important;
+            }
+
+            /* Ajustar tarjetas de línea de tiempo */
+            .slide[data-slide="4"] div[style*="flex: 0 1 180px"] {
+                flex: 0 1 150px !important;
+                min-width: 150px !important;
+                padding: 1rem 0.5rem !important;
+            }
+        }
+
+
+
+        /* ========== LIGHT THEME OVERRIDES (sin cambios) ========== */
+        .slide div[style*="background: rgba(0,20,40,0.5)"],
+        .slide div[style*="background: rgba(59,130,246,0.08)"],
+        .slide div[style*="background: rgba(139,92,246,0.08)"],
+        .slide div[style*="background: rgba(20,184,166,0.08)"],
+        .slide div[style*="background: rgba(16,185,129,0.08)"],
+        .slide div[style*="background: rgba(249,115,22,0.08)"],
+        .slide div[style*="background: rgba(255,255,255,0.05)"],
+        .slide div[style*="background: rgba(59,130,246,0.05)"],
+        .slide div[style*="background: rgba(139,92,246,0.05)"],
+        .slide div[style*="background: rgba(20,184,166,0.05)"],
+        .slide div[style*="background: rgba(16,185,129,0.05)"],
+        .slide div[style*="background: rgba(59,130,246,0.1)"],
+        .slide div[style*="background: rgba(139,92,246,0.1)"],
+        .slide div[style*="background: rgba(20,184,166,0.1)"],
+        .slide div[style*="background: rgba(16,185,129,0.1)"],
+        .slide div[style*="background: rgba(249,115,22,0.1)"],
+        .slide div[style*="background: rgba(96,165,250,0.1)"] {
+            background: rgba(255, 255, 255, 0.92) !important;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .slide div[style*="background: linear-gradient(145deg"] {
+            background: rgba(255, 255, 255, 0.95) !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .slide div[style*="background: rgba(0,0,0,0.2)"],
+        .slide div[style*="background: rgba(0,0,0,0.25)"],
+        .slide div[style*="background: rgba(0,0,0,0.3)"] {
+            background: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+        }
+
+        .slide p[style*="color: #e2e8f0"],
+        .slide p[style*="color: #f0f4ff"],
+        .slide li {
+            color: #2a2a2a !important;
+        }
+
+        .slide p[style*="color: #cbd5e1"] {
+            color: #444444 !important;
+        }
+
+        .slide p[style*="color: #94a3b8"],
+        .slide span[style*="color: #94a3b8"] {
+            color: #666666 !important;
+        }
+
+        .slide p[style*="color: #b0d4ff"],
+        .slide span[style*="color: #b0d4ff"],
+        .slide p[style*="color: #b0c4de"] {
+            color: #3b6fa0 !important;
+        }
+
+        .slide div[style*="color: #e2e8f0"] {
+            color: #2a2a2a !important;
+        }
+
+        .slide span[style*="background: #1e3a5f"] {
+            background: #e8f0fe !important;
+            color: #1e40af !important;
+        }
+
+        .slide span[style*="background: #2d3b4f"] {
+            background: #e8f0fe !important;
+            color: #1e40af !important;
+        }
+
+        .slide div[style*="background: rgba(255,255,255,0.03)"],
+        .slide div[style*="background: rgba(255,255,255,0.02)"] {
+            background: rgba(255, 255, 255, 0.7) !important;
+            border-color: rgba(37, 99, 235, 0.3) !important;
+        }
+
+        .slide div[style*="background: linear-gradient(145deg, #1a2a4a, #0f1a2f)"] {
+            background: rgba(255, 255, 255, 0.95) !important;
+        }
+
+        .slide .zoomable-image[style*="background: rgba(0,20,40,0.5)"] {
+            background: rgba(240, 240, 245, 0.95) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .slide div[style*="background: rgba(0,0,0,0.3)"][style*="max-height: 60vh"] {
+            background: rgba(255, 255, 255, 0.92) !important;
+            border-color: rgba(37, 99, 235, 0.2) !important;
+        }
+
+        .slide div[style*="color: #e2e8f0"][style*="text-indent"] {
+            color: #2a2a2a !important;
+        }
+
+        .slide p[style*="color: #a78bfa"] {
+            color: #6d28d9 !important;
+        }
+
+        /* Projector-safe accents */
+        .slide h3[style*="color: #60a5fa"],
+        .slide h4[style*="color: #60a5fa"],
+        .slide h5[style*="color: #60a5fa"] {
+            color: #1d4ed8 !important;
+        }
+
+        .slide p[style*="color: #60a5fa"],
+        .slide span[style*="color: #60a5fa"] {
+            color: #1d4ed8 !important;
+        }
+
+        .slide h3[style*="color: #a78bfa"],
+        .slide h4[style*="color: #a78bfa"],
+        .slide h5[style*="color: #a78bfa"] {
+            color: #6d28d9 !important;
+        }
+
+        .slide span[style*="color: #a78bfa"] {
+            color: #6d28d9 !important;
+        }
+
+        .slide h3[style*="color: #2dd4bf"],
+        .slide h4[style*="color: #2dd4bf"],
+        .slide h5[style*="color: #2dd4bf"] {
+            color: #0d9488 !important;
+        }
+
+        .slide p[style*="color: #2dd4bf"],
+        .slide span[style*="color: #2dd4bf"] {
+            color: #0d9488 !important;
+        }
+
+        .slide h3[style*="color: #34d399"],
+        .slide h4[style*="color: #34d399"] {
+            color: #047857 !important;
+        }
+
+        .slide p[style*="color: #34d399"],
+        .slide span[style*="color: #34d399"] {
+            color: #047857 !important;
+        }
+
+        .slide h3[style*="color: #f97316"] {
+            color: #c2410c !important;
+        }
+
+        .slide p[style*="color: #f97316"],
+        .slide span[style*="color: #f97316"] {
+            color: #c2410c !important;
+        }
+
+        .slide h3[style*="color: #cbd5e1"] {
+            color: #475569 !important;
+        }
+
+        .slide span[style*="color: #cbd5e1"] {
+            color: #475569 !important;
+        }
+
+        .slide p[style*="color: #b0c4de"] {
+            color: #3a5a7c !important;
+        }
+
+        .slide span[style*="color: #a78bfa"][style*="font-size: 2.5rem"] {
+            color: #7c3aed !important;
+        }
+
+        .slide span[style*="color: #60a5fa"][style*="font-size: 2rem"] {
+            color: #1d4ed8 !important;
+        }
+
+        .slide span[style*="color: #a78bfa"][style*="font-size: 2rem"] {
+            color: #6d28d9 !important;
+        }
+
+        .slide span[style*="color: #2dd4bf"][style*="font-size: 2rem"] {
+            color: #0d9488 !important;
+        }
+
+        .slide div[style*="color: #94a3b8"] {
+            color: #555555 !important;
+        }
+
+        .slide span[style*="color: #60a5fa"][style*="margin-top"] {
+            color: #1d4ed8 !important;
+        }
+
+        .slide span[style*="color: #a78bfa"][style*="margin-top"] {
+            color: #6d28d9 !important;
+        }
+
+        .slide span[style*="color: #94a3b8"][style*="font-style"] {
+            color: #555555 !important;
+        }
+
+        .slide span[style*="color: #94a3b8"][style*="margin-top"] {
+            color: #555555 !important;
+        }
+
+        .slide div[style*="color: #e2e8f0"] {
+            color: #2a2a2a !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="orientation-overlay">
+        <span>📱</span>
+        <p>Por favor, gira tu dispositivo a horizontal para ver la presentación.</p>
+        <small>Modo vertical no disponible</small>
+    </div>
+
+    <canvas id="neuralCanvas"></canvas>
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="presentation">
+        <!-- SLIDE 0 - PORTADA -->
+        <div class="slide active" data-slide="0">
+            <div style="position: absolute; top: 15%; left: 15%; width: 70px; z-index: 30;">
+                <img src="imagenes/logouc.png" alt="Logo UC"
+                    style="width: 100%; height: auto; filter: drop-shadow(0 0 8px rgba(96,165,250,0.5));">
+            </div>
+            <div style="position: absolute; top: 15%; right: 15%; width: 70px; z-index: 30;">
+                <img src="imagenes/pglogo.png" alt="Logo Postgrado"
+                    style="width: 100%; height: auto; filter: drop-shadow(0 0 8px rgba(96,165,250,0.5));">
+            </div>
+            <div class="brain-emoji">🧠</div>
+
+            <div style="text-align: center; max-width: 1000px; width: 100%;">
+                <p
+                    style="color: #b0c4de; margin-bottom: 2rem; font-size: clamp(1rem, 4vw, 1.5rem); letter-spacing: 1px;">
+                    Universidad de Carabobo<br>Facultad de Ciencias de la Educación<br>Dirección de
+                    Postgrado<br>Maestría en Investigación Educativa
+                </p>
+                <h1
+                    style="font-size: clamp(1.8rem, 6vw, 2.8rem); font-weight: 800; line-height: 1.2; margin-bottom: 1.5rem;">
+                    <span class="gradient-text">Aprehensión Cognitiva de Competencias</span><br>
+                    <span
+                        style="background: linear-gradient(135deg, #6d28d9, #be185d); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-size: 0.8em;">
+                        en las Ciencias Fácticas en la Educación Media General
+                    </span>
+                </h1>
+                <div style="font-size: clamp(1rem, 4vw, 1.3rem); margin: 1.5rem 0; color: #e2e8f0;">
+                    <strong>Autor:</strong> Williams David García González<br>
+                    <strong>Tutor:</strong> Dr. José Gregorio López Bolívar
+                </div>
+                <div style="font-size: clamp(0.9rem, 3vw, 1.1rem); color: #555555;">
+                    Naguanagua, Marzo de 2026
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 1 – ¿POR QUÉ ENSEÑAR CIENCIAS? -->
+        <div class="slide" data-slide="1">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    ¿Por qué enseñar Ciencias Fácticas?
+                </h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.8rem; margin-bottom: 1rem;">
+                    <!-- BUNGE -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-left: 6px solid #3b82f6; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">🌿</span>
+                            <h3 style="color: #60a5fa; margin: 0; font-size: 1.4rem;">Relación hombre-naturaleza</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">"Favorece la comprensión y el
+                            mejoramiento de la relación del hombre con la naturaleza."</p>
+                        <span style="color: #94a3b8; margin-top: 0.8rem; font-style: italic;">— Bunge, 1994</span>
+                    </div>
+                    <!-- UNESCO -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-left: 6px solid #8b5cf6; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">🌐</span>
+                            <h3 style="color: #a78bfa; margin: 0; font-size: 1.4rem;">Competencias UNESCO</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">Promueve 5 áreas de
+                            competencias, incluyendo <strong>Ciencias Fácticas (Naturales)</strong>.</p>
+                        <span style="color: #94a3b8; margin-top: 0.8rem; font-style: italic;">— UNESCO, s.f.</span>
+                        <div
+                            style="margin-top: 0.8rem; padding: 0.3rem 1rem; border-radius: 30px; display: inline-block; font-size: 1.0rem; color: #6735ff;">
+                            📘 Área prioritaria</div>
+                    </div>
+                    <!-- MPPE -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-left: 6px solid #14b8a6; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">📚</span>
+                            <h3 style="color: #2dd4bf; margin: 0; font-size: 1.4rem;">Currículo venezolano</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">El M.P.P.E. contempla la
+                            enseñanza de las ciencias fácticas en sus mallas <strong>31059 y 31060</strong>.</p>
+                        <span style="color: #94a3b8; margin-top: 0.8rem; font-style: italic;">— Ministerio del Poder
+                            Popular para la Educación</span>
+                    </div>
+                    <!-- DESCONOCIMIENTO -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(96,165,250,0.1); backdrop-filter: blur(4px); border-left: 6px solid #60a5fa; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">❓</span>
+                            <h3 style="color: #60a5fa; margin: 0; font-size: 1.4rem;">Desconocimiento estudiantil</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">A menudo estos desconocen la
+                            importancia de las ciencias fácticas en su formación.</p>
+                        <span style="color: #60a5fa; margin-top: 0.8rem;">🔍 Aspecto clave</span>
+                    </div>
+                    <!-- SALTO CUALITATIVO -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-left: 6px solid #10b981; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">📈</span>
+                            <h3 style="color: #34d399; margin: 0; font-size: 1.4rem;">Salto cualitativo</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">A partir de 3er año se
+                            incorporan recursos matemáticos a la enseñanza de las ciencias.</p>
+                        <span style="color: #94a3b8; margin-top: 0.8rem;">➕ Mayor complejidad</span>
+                    </div>
+                    <!-- DIFICULTADES -->
+                    <div class="fundamento-item"
+                        style="display: flex; flex-direction: column; align-items: flex-start; background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); border-left: 6px solid #8b5cf6; border-radius: 16px; padding: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.8rem;">
+                            <span style="font-size: 2.5rem;">🧠</span>
+                            <h3 style="color: #a78bfa; margin: 0; font-size: 1.4rem;">Dificultades de comprensión</h3>
+                        </div>
+                        <p style="font-size: 1.1rem; line-height: 1.5; color: #e2e8f0;">Eventuales dificultades en la
+                            comprensión, reflejadas en el discurso de los estudiantes desde la perspectiva de la
+                            Aprehensión Cognitiva.</p>
+                        <span style="color: #a78bfa; margin-top: 0.8rem;">🎙️ Evidencias discursivas</span>
+                    </div>
+                </div>
+                <div
+                    style="margin-top: 2rem; text-align: center; background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 50px; border: 1px dashed #60a5fa80;">
+                    <p style="font-size: 1.1rem; color: #b0d4ff;">“Enseñar ciencias no es solo transmitir conocimientos,
+                        es formar una nueva forma de habitar el mundo.”</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 2 – INTERROGANTE Y PROPÓSITOS -->
+        <div class="slide" data-slide="2">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <div
+                    style="background: linear-gradient(145deg, rgba(96,165,250,0.15), rgba(139,92,246,0.15)); backdrop-filter: blur(4px); border-radius: 30px; padding: 2rem; margin-bottom: 2.5rem; border: 1px solid rgba(96,165,250,0.3); box-shadow: 0 8px 25px rgba(0,0,0,0.2);">
+                    <h2
+                        style="color: #a78bfa; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.8rem; text-align: center;">
+                        🧠 Interrogante de la Investigación</h2>
+                    <p
+                        style="font-size: clamp(1.2rem, 4vw, 1.5rem); font-weight: 500; line-height: 1.5; color: #e2e8f0; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                        ¿Cómo experimentan los estudiantes de educación Media General<br>la <strong
+                            style="color: #60a5fa;">aprehensión cognitiva de competencias</strong> en ciencias
+                        fácticas<br>(Física, Química, Biología)?
+                    </p>
+                </div>
+
+                <div
+                    style="background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-left: 8px solid #3b82f6; border-radius: 0 20px 20px 0; padding: 1.3rem 1.8rem; margin-bottom: 2.2rem; display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-size: 2.5rem; color: #60a5fa;">🎯</span>
+                    <div>
+                        <h4
+                            style="color: #60a5fa; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.3rem;">
+                            Propósito General</h4>
+                        <p style="font-size: 1.2rem; line-height: 1.5; color: #e2e8f0; font-weight: 500;">Comprender la
+                            aprehensión cognitiva de competencias en las ciencias fácticas en el estudiantado de
+                            educación Media General.</p>
+                    </div>
+                </div>
+
+                <h4
+                    style="color: #a78bfa; font-size: 1.3rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1.2rem; text-align: center;">
+                    🔍 Propósitos Específicos</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-top: 4px solid #3b82f6; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <span style="font-size: 2rem;">📘</span>
+                        <h5 style="color: #60a5fa; font-size: 1.2rem; font-weight: 700;">1. Describir</h5>
+                        <p style="color: #e2e8f0; line-height: 1.5; font-size: 1rem;">las experiencias del estudiantado
+                            en la aprehensión cognitiva de competencias en las ciencias fácticas en la educación Media
+                            General.</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-top: 4px solid #8b5cf6; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <span style="font-size: 2rem;">🔎</span>
+                        <h5 style="color: #a78bfa; font-size: 1.2rem; font-weight: 700;">2. Develar</h5>
+                        <p style="color: #e2e8f0; line-height: 1.5; font-size: 1rem;">los resultados desde la
+                            información obtenida sobre las experiencias en la aprehensión cognitiva en las ciencias
+                            fácticas en la Educación Media General.</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-top: 4px solid #14b8a6; border-radius: 16px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <span style="font-size: 2rem;">💡</span>
+                        <h5 style="color: #2dd4bf; font-size: 1.2rem; font-weight: 700;">3. Interpretar</h5>
+                        <p style="color: #e2e8f0; line-height: 1.5; font-size: 1rem;">la información obtenida del
+                            estudiantado sobre sus experiencias en la aprehensión cognitiva de competencias en la
+                            educación Media General.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 2.2rem; text-align: center; opacity: 0.5;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3 – RELEVANCIA DE LA INVESTIGACIÓN -->
+        <div class="slide" data-slide="3">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2.5rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Relevancia de la Investigación
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.8rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; border-left: 6px solid #3b82f6; padding: 1.8rem 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 3rem; margin-bottom: 0.8rem; filter: drop-shadow(0 4px 6px rgba(59,130,246,0.3));">🌐</span>
+                        <h3 style="color: #60a5fa; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;">Social
+                        </h3>
+                        <p style="color: #e2e8f0; line-height: 1.6; font-size: 1.05rem;">Formación de ciudadanos
+                            críticos con pensamiento analítico y elevadas competencias académicas y profesionales.</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; border-left: 6px solid #8b5cf6; padding: 1.8rem 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 3rem; margin-bottom: 0.8rem; filter: drop-shadow(0 4px 6px rgba(139,92,246,0.3));">📚</span>
+                        <h3 style="color: #a78bfa; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Educativa</h3>
+                        <p style="color: #e2e8f0; line-height: 1.6; font-size: 1.05rem;">Optimización de procesos de
+                            Enseñanza y Aprendizaje.</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 24px; border-left: 6px solid #14b8a6; padding: 1.8rem 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 3rem; margin-bottom: 0.8rem; filter: drop-shadow(0 4px 6px rgba(20,184,166,0.3));">📊</span>
+                        <h3 style="color: #2dd4bf; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Investigativa</h3>
+                        <p style="color: #e2e8f0; line-height: 1.6; font-size: 1.05rem;">Fundamento para posteriores
+                            estudios interdisciplinarios.</p>
+                    </div>
+                    <div
+                        style="background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 24px; border-left: 6px solid #10b981; padding: 1.8rem 1.5rem; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 3rem; margin-bottom: 0.8rem; filter: drop-shadow(0 4px 6px rgba(16,185,129,0.3));">🔬</span>
+                        <h3 style="color: #34d399; font-size: 1.6rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Científica</h3>
+                        <p style="color: #e2e8f0; line-height: 1.6; font-size: 1.05rem;">Integración entre la educación,
+                            la psicoeducación y la ciencia cognitiva.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 2.5rem; text-align: center; opacity: 0.5;">
+                    <span
+                        style="display: inline-block; width: 120px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6, #10b981); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4 – PANORAMA DE LA LITERATURA -->
+        <div class="slide" data-slide="4">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2.5rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    Panorama de la Literatura
+                </h2>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; position: relative;">
+                    <div
+                        style="flex: 0 1 180px; min-width: 180px; max-width: 220px; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; border-top: 4px solid #3b82f6; padding: 1.5rem 1rem; text-align: center; transition: transform 0.2s; position: relative; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="display: inline-block; background: #3b82f6; color: white; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem;">2021</span>
+                        <h4 style="color: #60a5fa; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Rivero y
+                            Pacheco</h4>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4;">Desarrollo de Competencias
+                            Científicas Investigativas…</p>
+                    </div>
+                    <div
+                        style="flex: 0 1 180px; min-width: 180px; max-width: 220px; background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; border-top: 4px solid #8b5cf6; padding: 1.5rem 1rem; text-align: center; transition: transform 0.2s; position: relative; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="display: inline-block; background: #8b5cf6; color: white; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem;">2023</span>
+                        <h4 style="color: #a78bfa; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Tangoa-Bernardo</h4>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4;">Estrategias metacognitivas en el
+                            proceso de aprendizaje…</p>
+                    </div>
+                    <div
+                        style="flex: 0 1 180px; min-width: 180px; max-width: 220px; background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 20px; border-top: 4px solid #14b8a6; padding: 1.5rem 1rem; text-align: center; transition: transform 0.2s; position: relative; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="display: inline-block; background: #14b8a6; color: white; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem;">2023</span>
+                        <h4 style="color: #2dd4bf; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Ninanya
+                            – Tantavilca</h4>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4;">Percepciones docentes sobre la
+                            concreción del enfoque por competencias…</p>
+                    </div>
+                    <div
+                        style="flex: 0 1 180px; min-width: 180px; max-width: 220px; background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 20px; border-top: 4px solid #10b981; padding: 1.5rem 1rem; text-align: center; transition: transform 0.2s; position: relative; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="display: inline-block; background: #10b981; color: white; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem;">2025</span>
+                        <h4 style="color: #34d399; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">
+                            Calderón-Cordero y Narváez</h4>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4;">La Enseñanza de la Química: Un
+                            Aporte Teórico desde las Competencias Científicas.</p>
+                    </div>
+                    <div
+                        style="flex: 0 1 180px; min-width: 180px; max-width: 220px; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; border-top: 4px solid #3b82f6; padding: 1.5rem 1rem; text-align: center; transition: transform 0.2s; position: relative; z-index: 2; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="display: inline-block; background: #3b82f6; color: white; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 30px; font-size: 0.9rem; margin-bottom: 0.8rem;">2025</span>
+                        <h4 style="color: #60a5fa; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem;">Mendoza
+                            y Calderón</h4>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4;">Familias Disfuncionales y su
+                            Intervención en el Proceso de Aprendizaje en Educación Media.</p>
+                    </div>
+                </div>
+                <div class="timeline-connector"
+                    style="display: none; width: 80%; height: 2px; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #14b8a6, #10b981, #3b82f6); margin: 0.5rem auto 0; border-radius: 2px; opacity: 0.5;">
+                </div>
+                <div
+                    style="margin-top: 2rem; text-align: center; background: rgba(255,255,255,0.02); padding: 0.8rem; border-radius: 40px; border: 1px dashed #60a5fa50;">
+                    <p style="color: #b0d4ff; font-size: 0.9rem;">📌 Evolución de la producción académica sobre
+                        competencias fácticas, procesos cognitivos y Triple Mímesis Ricoeuriana (2021–2025)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5 – FUNDAMENTOS TEÓRICOS Y LEGALES -->
+        <div class="slide" data-slide="5">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2.2rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    Fundamentos Teórico‑Pedagógicos y Legales
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+                    <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+                        <h3
+                            style="color: #a78bfa; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 2rem;">📘</span> Teorías del aprendizaje
+                        </h3>
+                        <div
+                            style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.2rem; border-left: 6px solid #3b82f6;">
+                            <img src="imagenes/piaget.png" alt="Jean Piaget"
+                                style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #60a5fa; box-shadow: 0 0 12px rgba(96,165,250,0.5); flex-shrink: 0;">
+                            <div>
+                                <h4 style="color: #60a5fa; font-size: 1.1rem; font-weight: 700;">Teoría del Desarrollo
+                                    Cognitivo</h4>
+                                <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">Jean Piaget (1999) –
+                                    Estadios del desarrollo y construcción activa del conocimiento.</p>
+                            </div>
+                        </div>
+                        <div
+                            style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.2rem; border-left: 6px solid #8b5cf6;">
+                            <img src="imagenes/vygotsky.png" alt="Lev Vygotsky"
+                                style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #a78bfa; box-shadow: 0 0 12px rgba(167,139,250,0.5); flex-shrink: 0;">
+                            <div>
+                                <h4 style="color: #a78bfa; font-size: 1.1rem; font-weight: 700;">Enfoque Sociocultural y
+                                    ZDP</h4>
+                                <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">Lev Vygotsky (2009;
+                                    2021) – Zona de Desarrollo Próximo, mediación social del aprendizaje.</p>
+                            </div>
+                        </div>
+                        <div
+                            style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.2rem; border-left: 6px solid #14b8a6;">
+                            <img src="imagenes/ortega.png" alt="José Ortega y Gasset"
+                                style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #2dd4bf; box-shadow: 0 0 12px rgba(45,212,191,0.5); flex-shrink: 0;">
+                            <div>
+                                <h4 style="color: #2dd4bf; font-size: 1.1rem; font-weight: 700;">Contemplación como
+                                    fundamento de la Aprehensión</h4>
+                                <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">José Ortega y Gasset
+                                    (1966; 2004) – La contemplación y ensimismamiento como medio de interacción y
+                                    apropiación de la realidad.</p>
+                            </div>
+                        </div>
+                        <div
+                            style="display: flex; align-items: flex-start; gap: 1rem; background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.2rem; border-left: 6px solid #10b981;">
+                            <img src="imagenes/spencer.png" alt="Spencer y Spencer"
+                                style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #34d399; box-shadow: 0 0 12px rgba(52,211,153,0.5); flex-shrink: 0;">
+                            <div>
+                                <h4 style="color: #34d399; font-size: 1.1rem; font-weight: 700;">Enfoque por
+                                    Competencias</h4>
+                                <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">Spencer & Spencer,
+                                    Tobón, Attewell – Saber conocer, saber hacer, saber ser.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1.2rem;">
+                        <h3
+                            style="color: #a78bfa; font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 2rem;">⚖️</span> Base legal venezolana
+                        </h3>
+                        <div
+                            style="background: rgba(59,130,246,0.05); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.4rem; border: 1px solid #3b82f640;">
+                            <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+                                <span style="font-size: 2rem;">📜</span>
+                                <h4 style="color: #60a5fa; font-size: 1.2rem; font-weight: 700; margin: 0;">Constitución
+                                    de la República Bolivariana de Venezuela</h4>
+                            </div>
+                            <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 0.3rem;">CRBV (1999)</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #3b82f6;">Art.
+                                    102</span>
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #3b82f6;">Art.
+                                    103</span>
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #3b82f6;">Art.
+                                    104</span>
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #3b82f6;">Art.
+                                    106</span>
+                            </div>
+                            <p style="color: #cbd5e1; font-size: 0.9rem; margin-top: 0.8rem; font-style: italic;">
+                                Derecho a la educación, obligatoriedad, gratuidad, calidad, participación democrática.
+                            </p>
+                        </div>
+                        <div
+                            style="background: rgba(139,92,246,0.05); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.4rem; border: 1px solid #8b5cf640;">
+                            <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+                                <span style="font-size: 2rem;">📖</span>
+                                <h4 style="color: #a78bfa; font-size: 1.2rem; font-weight: 700; margin: 0;">Ley Orgánica
+                                    de Educación</h4>
+                            </div>
+                            <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 0.3rem;">LOE (2005)</p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #8b5cf6;">Art.
+                                    3</span>
+                                <span
+                                    style="background: #1e3a5f; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.85rem; color: #b0d4ff; border: 1px solid #8b5cf6;">Art.
+                                    5</span>
+                            </div>
+                            <p style="color: #cbd5e1; font-size: 0.9rem; margin-top: 0.8rem; font-style: italic;">
+                                Principios y fines de la educación, competencias del Estado docente, currículo nacional.
+                            </p>
+                        </div>
+                        <div
+                            style="margin-top: 0.5rem; padding: 0.8rem; background: rgba(255,255,255,0.02); border-radius: 16px; border: 1px dashed #60a5fa60;">
+                            <p style="color: #b0d4ff; font-size: 0.9rem; text-align: center;">🏛️ El sistema educativo
+                                venezolano reconoce las ciencias fácticas como área fundamental para la formación
+                                integral.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6 – LA APORÍA DEL TIEMPO Y EL PUENTE -->
+        <div class="slide" data-slide="6">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    La Aporía del Tiempo y su Resolución
+                </h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.8rem; margin-bottom: 1rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #3b82f6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <img src="imagenes/agustin.png" alt="San Agustín"
+                                style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #60a5fa; box-shadow: 0 0 15px rgba(96,165,250,0.5);">
+                            <h3 style="color: #60a5fa; font-size: 1.5rem; font-weight: 700; margin: 0;">LA APORÍA DEL
+                                TIEMPO EN AGUSTÍN</h3>
+                        </div>
+                        <p
+                            style="color: #e2e8f0; font-size: 1rem; line-height: 1.5; margin-bottom: 0.8rem; font-style: italic;">
+                            “Pasado ya no es, futuro aún no es” — ¿cómo medir lo que no existe?</p>
+                        <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5;">
+                            <strong style="color: #60a5fa;">Solución subjetiva:</strong> El tiempo existe en el
+                            alma.<br>
+                            <span style="color: #94a3b8;">Pasado = memoria / Futuro = expectación / Presente =
+                                atención.</span><br>
+                            <strong style="color: #60a5fa;">Consecuencia:</strong> El tiempo solo es accesible mediante
+                            el relato interior.
+                        </p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #8b5cf6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <h3
+                            style="color: #a78bfa; font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 1.8rem;">🌉</span>DESDE LA MÍMESIS EN ARISTÓTELES A LA OBRA DE
+                            RICŒUR
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                <img src="imagenes/aristoteles.png" alt="Aristóteles"
+                                    style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #a78bfa; box-shadow: 0 0 12px rgba(167,139,250,0.5);">
+                                <div>
+                                    <p style="color: #e2e8f0; margin: 0;"><strong
+                                            style="color: #a78bfa;">Aristóteles:</strong> <em>Mímesis</em> = imitación
+                                        creadora, configuración de la acción en trama.</p>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                <img src="imagenes/ricoeur.png" alt="Paul Ricœur"
+                                    style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #a78bfa; box-shadow: 0 0 12px rgba(167,139,250,0.5);">
+                                <div>
+                                    <p style="color: #e2e8f0; margin: 0;"><strong
+                                            style="color: #a78bfa;">Ricœur:</strong> El tiempo se hace humano al
+                                        articularse narrativamente.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.5; margin-top: 1rem;">La narración
+                            rescata el tiempo de su dispersión y le da forma.</p>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 7 – CAMINO METODOLÓGICO -->
+        <div class="slide" data-slide="7">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2.5rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Camino Metodológico
+                </h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.8rem; margin-bottom: 2.5rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-top: 6px solid #3b82f6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 2.8rem; color: #60a5fa; filter: drop-shadow(0 4px 6px rgba(59,130,246,0.3));">🔍</span>
+                        <h3 style="color: #60a5fa; font-size: 1.5rem; font-weight: 700; margin: 0.8rem 0 0.5rem;">
+                            Paradigma</h3>
+                        <p style="color: #e2e8f0; font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem;">
+                            Interpretativo</p>
+                        <p style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">Vasilachis de Gialdino
+                            (2006)<br>Schuster et al. (2013)</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-top: 6px solid #8b5cf6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 2.8rem; color: #a78bfa; filter: drop-shadow(0 4px 6px rgba(139,92,246,0.3));">📝</span>
+                        <h3 style="color: #a78bfa; font-size: 1.5rem; font-weight: 700; margin: 0.8rem 0 0.5rem;">
+                            Enfoque</h3>
+                        <p style="color: #e2e8f0; font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem;">
+                            Cualitativo</p>
+                        <p style="color: #94a3b8; font-size: 0.9rem; font-style: italic;">Taylor y Bogdan (1987)</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-top: 6px solid #14b8a6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span
+                            style="font-size: 2.8rem; color: #2dd4bf; filter: drop-shadow(0 4px 6px rgba(20,184,166,0.3));">📖</span>
+                        <h3 style="color: #2dd4bf; font-size: 1.5rem; font-weight: 700; margin: 0.8rem 0 0.5rem;">Método
+                        </h3>
+                        <p style="color: #e2e8f0; font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem;">
+                            Hermenéutico en Ricœur</p>
+                    </div>
+                </div>
+                <div
+                    style="display: flex; flex-wrap: wrap; align-items: center; gap: 2rem; background: linear-gradient(145deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1)); backdrop-filter: blur(4px); border-radius: 40px; padding: 1.8rem 2.2rem; border: 1px solid rgba(96,165,250,0.4); box-shadow: 0 12px 28px rgba(0,0,0,0.3); margin-top: 0.5rem;">
+                    <div style="flex-shrink: 0;">
+                        <img src="imagenes/ricoeur.png" alt="Paul Ricœur"
+                            style="width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 4px solid #8b5cf6; box-shadow: 0 0 30px rgba(139,92,246,0.7); background: white;">
+                    </div>
+                    <div style="flex: 1; min-width: 260px;">
+                        <h3
+                            style="color: #a78bfa; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.6rem;">
+                            <span style="font-size: 2rem;">🧠</span> La Hermenéutica en Ricœur
+                        </h3>
+                        <div
+                            style="background: rgba(0,0,0,0.2); border-left: 6px solid #8b5cf6; border-radius: 0 20px 20px 0; padding: 0.8rem 1.2rem; margin-bottom: 0.8rem;">
+                            <p style="color: #f0f4ff; font-size: 1.15rem; font-style: italic; line-height: 1.5;">“Los
+                                discursos son ellos mismos acciones”</p>
+                            <span style="color: #b0d4ff; font-size: 0.9rem;">— Ricœur, 2002, p. 12</span>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5;">Abordaje del estudio hermenéutico
+                            a través de la <strong style="color: #a78bfa;">ipseidad</strong> —identidad narrativa— y la
+                            <strong style="color: #a78bfa;">Triple Mímesis</strong>: prefiguración, configuración y
+                            refiguración.
+                        </p>
+                    </div>
+                </div>
+                <div style="margin-top: 2.2rem; text-align: center; opacity: 0.5;">
+                    <span
+                        style="display: inline-block; width: 120px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8 – IPSEIDAD: IDENTIDAD NARRATIVA -->
+        <div class="slide" data-slide="8">
+            <div style="max-width: 1200px; width: 100%; padding: 1.5rem 2rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 1.5rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Ipseidad – Identidad Narrativa del Sujeto
+                </h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 1.2rem; margin-bottom: 1.5rem;">
+                    <div
+                        style="flex: 1 1 200px; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.5rem; border-left: 5px solid #3b82f6;">
+                        <h3
+                            style="color: #60a5fa; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🧊</span> Mismidad
+                        </h3>
+                        <p style="color: #e2e8f0; font-size: 1.1rem; line-height: 1.5;"><em>¿Qué soy?</em> –
+                            Permanencia, carácter fijo.</p>
+                    </div>
+                    <div
+                        style="flex: 1 1 200px; background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.5rem; border-left: 5px solid #8b5cf6;">
+                        <h3
+                            style="color: #a78bfa; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>🌀</span> Ipseidad
+                        </h3>
+                        <p style="color: #e2e8f0; font-size: 1.1rem; line-height: 1.5;"><em>¿Quién soy?</em> –
+                            Construcción dinámica, dialéctica.</p>
+                    </div>
+                    <div
+                        style="flex: 2 1 320px; display: flex; align-items: center; gap: 1rem; background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.2rem 1.5rem; border: 1px solid #8b5cf680;">
+                        <img src="imagenes/ricoeur.png" alt="Paul Ricœur"
+                            style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 2px solid #a78bfa;">
+                        <div>
+                            <p
+                                style="color: #f0f4ff; font-size: 1rem; font-style: italic; margin: 0; line-height: 1.5;">
+                                "El frágil vástago, fruto de la unión de la historia y de la ficción, es la asignación a
+                                un individuo o a una comunidad de una identidad específica que podemos llamar su
+                                identidad narrativa."</p>
+                            <span style="color: #b0d4ff; font-size: 0.9rem;">— Ricœur, 2009, p. 997</span>
+                        </div>
+                    </div>
+                </div>
+                <h3
+                    style="color: #a78bfa; font-size: 1.3rem; font-weight: 700; margin: 0.5rem 0 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.6rem;">⚙️</span> Propiedades de la Ipseidad
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.2rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.05); backdrop-filter: blur(4px); border-radius: 16px; padding: 1rem 1.2rem; border-bottom: 4px solid #3b82f6;">
+                        <h4 style="color: #60a5fa; font-size: 1.15rem; font-weight: 700; margin: 0 0 0.4rem;">🗣️
+                            Dialéctica acción‑discurso</h4>
+                        <p style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.5;">"Los discursos son ellos mismos
+                            acciones" (Ricœur, 2002).</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.05); backdrop-filter: blur(4px); border-radius: 16px; padding: 1rem 1.2rem; border-bottom: 4px solid #8b5cf6;">
+                        <h4 style="color: #a78bfa; font-size: 1.15rem; font-weight: 700; margin: 0 0 0.4rem;">🔍
+                            Autocrítica</h4>
+                        <p style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.5;">Revisión constante →
+                            reinterpretación, transformación.</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.05); backdrop-filter: blur(4px); border-radius: 16px; padding: 1rem 1.2rem; border-bottom: 4px solid #14b8a6;">
+                        <h4 style="color: #2dd4bf; font-size: 1.15rem; font-weight: 700; margin: 0 0 0.4rem;">⚖️
+                            Evaluativa</h4>
+                        <p style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.5;">Juicio ético sobre las propias
+                            acciones: el sujeto se constituye al evaluar su pasado y proyectar ideales.</p>
+                    </div>
+                    <div
+                        style="background: rgba(16,185,129,0.05); backdrop-filter: blur(4px); border-radius: 16px; padding: 1rem 1.2rem; border-bottom: 4px solid #10b981;">
+                        <h4 style="color: #34d399; font-size: 1.15rem; font-weight: 700; margin: 0 0 0.4rem;">🤝
+                            Dialógica / Social</h4>
+                        <p style="color: #e2e8f0; font-size: 1.05rem; line-height: 1.5;">Identificación con valores,
+                            normas, ideales externos.</p>
+                    </div>
+                </div>
+                <div
+                    style="display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); border-radius: 20px; padding: 1rem 1.5rem; border: 1px solid #60a5fa60;">
+                    <span style="font-size: 1.8rem;">🧠</span>
+                    <p style="color: #e2e8f0; font-size: 1.1rem; line-height: 1.5; margin: 0;"><strong
+                            style="color: #60a5fa;">Ipseidad ⇄ Vygotsky:</strong> Zona de Desarrollo Próximo ·
+                        Construcción social del conocimiento.</p>
+                </div>
+                <div
+                    style="margin-top: 0.8rem; padding: 1rem 1.5rem; background: linear-gradient(145deg, #1a2a4a, #0f1a2f); border-radius: 20px; border: 1px solid #60a5fa;">
+                    <p style="color: #f0f4ff; font-size: 1.05rem; line-height: 1.5; margin: 0; text-align: center;">
+                        <strong style="color: #a78bfa;">SÍNTESIS:</strong> La ipseidad es el sujeto que se narra, se
+                        interpreta y se reconstruye. En esta investigación es: el <strong style="color: #60a5fa;">objeto
+                            de estudio</strong> (la experiencia del estudiante) y el <strong
+                            style="color: #60a5fa;">principio metodológico</strong> (narrativa como vía de
+                        conocimiento).
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9 – TRIPLE MÍMESIS -->
+        <div class="slide" data-slide="9">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    La Triple Mímesis de Ricœur
+                </h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.1); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.3rem; border-top: 5px solid #3b82f6;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
+                            <span
+                                style="background: #3b82f6; color: white; font-weight: 800; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">I</span>
+                            <h4 style="color: #60a5fa; font-size: 1.2rem; font-weight: 700; margin: 0;">Prefiguración
+                            </h4>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                            <strong>Función:</strong> Comprensión del mundo de la acción (contexto, símbolos,
+                            causalidad).
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4; font-style: italic;">En la
+                            investigación: Descripción densa de entrevistas → materia prima.</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.3rem; border-top: 5px solid #8b5cf6;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
+                            <span
+                                style="background: #8b5cf6; color: white; font-weight: 800; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">II</span>
+                            <h4 style="color: #a78bfa; font-size: 1.2rem; font-weight: 700; margin: 0;">Configuración
+                            </h4>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                            <strong>Función:</strong> Construcción de la trama → orden, coherencia, atemporalidad.
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4; font-style: italic;">En la
+                            investigación: Análisis y redacción de resultados → narrativa científica.</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.1); backdrop-filter: blur(4px); border-radius: 20px; padding: 1.3rem; border-top: 5px solid #14b8a6;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
+                            <span
+                                style="background: #14b8a6; color: white; font-weight: 800; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 12px;">III</span>
+                            <h4 style="color: #2dd4bf; font-size: 1.2rem; font-weight: 700; margin: 0;">Refiguración
+                            </h4>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.5rem;">
+                            <strong>Función:</strong> Interpretación del lector, fusión texto-realidad.
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4; font-style: italic;">En la
+                            investigación: Comprensión final, aporte al conocimiento.</p>
+                    </div>
+                </div>
+                <div
+                    style="display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); border-radius: 30px; padding: 1.2rem 1.8rem; margin: 1.5rem 0; border: 1px solid #60a5fa60;">
+                    <div class="zoomable-image"
+                        style="flex: 0 0 200px; cursor: pointer; border-radius: 16px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: 1px solid #60a5fa60;"
+                        onclick="openModal(this)" data-fullsrc="imagenes/diagrama-triple-mimesis.png"
+                        alt="Aplicación de la Triple Mímesis en la investigación">
+                        <span style="font-size: 4rem; line-height: 1;">📊</span>
+                        <span style="color: #60a5fa; font-size: 0.9rem; margin-top: 0.3rem;">clic para ver</span>
+                    </div>
+                    <div style="flex: 1; min-width: 250px;">
+                        <h4
+                            style="color: #60a5fa; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.6rem;">📊</span> Esquema de aplicación de la Triple Mímesis en la
+                            investigación
+                        </h4>
+                        <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">El diagrama muestra cómo los
+                            momentos de la mímesis (prefiguración, configuración, refiguración) se traducen en fases
+                            concretas del análisis cualitativo: desde la descripción densa hasta la interpretación
+                            final.</p>
+                        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.3rem;">👆 Haz clic en el icono para
+                            ver el diagrama completo</p>
+                    </div>
+                </div>
+                <div
+                    style="display: flex; align-items: center; gap: 1.2rem; background: rgba(0,0,0,0.25); backdrop-filter: blur(4px); border-radius: 50px; padding: 1rem 1.8rem; border: 1px solid #8b5cf6; box-shadow: 0 4px 20px rgba(139,92,246,0.2);">
+                    <span style="font-size: 2.5rem; color: #a78bfa; filter: drop-shadow(0 0 10px #8b5cf6);">“</span>
+                    <div style="flex: 1;">
+                        <p style="color: #f0f4ff; font-size: 1rem; font-style: italic; line-height: 1.4; margin: 0;">El
+                            tiempo se hace tiempo humano en la medida en que se articula en un modo narrativo, y la
+                            narración alcanza su plena significación cuando se convierte en una condición de la
+                            existencia temporal.</p>
+                        <span style="color: #b0d4ff; font-size: 0.85rem; display: block; margin-top: 0.3rem;">— Ricœur,
+                            2004</span>
+                    </div>
+                    <span
+                        style="font-size: 2.5rem; color: #a78bfa; filter: drop-shadow(0 0 10px #8b5cf6); align-self: flex-end;">”</span>
+                </div>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 10 – INMERSIÓN AL CAMPO -->
+        <div class="slide" data-slide="10">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Inmersión al Campo
+                </h2>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #3b82f6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;"><span
+                                style="font-size: 2rem;">🏫</span>
+                            <h3 style="color: #60a5fa; font-size: 1.3rem; font-weight: 700; margin: 0;">Escenario</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5;">U.E. Nuestra Señora de
+                            Begoña<br>Naguanagua, Estado Carabobo.</p>
+                        <p style="color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem;">Taylor y
+                            Bogdan (1987)</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #8b5cf6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;"><span
+                                style="font-size: 2rem;">👥</span>
+                            <h3 style="color: #a78bfa; font-size: 1.3rem; font-weight: 700; margin: 0;">Informantes
+                                clave</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5;">Siete estudiantes de 3ro a 5to
+                            año.</p>
+                        <p style="color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem;">McKernan
+                            (1999)</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #14b8a6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;"><span
+                                style="font-size: 2rem;">🎤</span>
+                            <h3 style="color: #2dd4bf; font-size: 1.3rem; font-weight: 700; margin: 0;">Técnicas de
+                                recolección</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5;">Entrevistas en
+                            profundidad<br>Observación participante</p>
+                        <p style="color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem;">Gurdián
+                            (2007)</p>
+                    </div>
+                    <div
+                        style="background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #10b981; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem;"><span
+                                style="font-size: 2rem;">📋</span>
+                            <h3 style="color: #34d399; font-size: 1.3rem; font-weight: 700; margin: 0;">Instrumentos
+                            </h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5;">Registros de campo<br>Guión de
+                            temáticas para entrevista en profundidad</p>
+                        <p style="color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem;">Gurdián
+                            (2007)</p>
+                    </div>
+                </div>
+                <div
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-top: 6px solid #3b82f6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2rem;">⚙️</span>
+                            <h3 style="color: #60a5fa; font-size: 1.3rem; font-weight: 700; margin: 0;">Procesamiento
+                            </h3>
+                        </div>
+                        <ul
+                            style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; padding-left: 1.2rem; margin: 0;">
+                            <li>Codificación temática y categorización</li>
+                            <li>Análisis narrativo y semiótico</li>
+                        </ul>
+                        <p style="color: #94a3b8; font-size: 0.85rem; font-style: italic; margin-top: 0.5rem;">Gibbs
+                            (2013)</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-top: 6px solid #8b5cf6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2rem;">🏆</span>
+                            <h3 style="color: #a78bfa; font-size: 1.3rem; font-weight: 700; margin: 0;">Criterios de
+                                excelencia</h3>
+                        </div>
+                        <ul
+                            style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.6; padding-left: 1.2rem; margin: 0;">
+                            <li>Triangulación y transversalización</li>
+                            <li>Análisis del discurso</li>
+                            <li>Triple Mímesis</li>
+                        </ul>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-top: 6px solid #14b8a6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2rem;">🛡️</span>
+                            <h3 style="color: #2dd4bf; font-size: 1.3rem; font-weight: 700; margin: 0;">Bioética</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">Reglamento de las Comisiones de
+                            Bioética y Bioseguridad de la Universidad de Carabobo (2021)</p>
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11 – MÍMESIS II: CONFIGURACIÓN DEL RELATO -->
+        <div class="slide" data-slide="11">
+            <div style="max-width: 1200px; width: 100%; padding: 0.5rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 0.8rem; font-size: clamp(1.6rem, 4vw, 2rem);">
+                    El Proceso de Mímesis II – Configuración de las Observaciones
+                </h2>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <div
+                        style="flex: 1 1 250px; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1rem; border-left: 4px solid #3b82f6;">
+                        <div style="text-align: center;">
+                            <div class="zoomable-image"
+                                style="cursor: pointer; border-radius: 12px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; width: 100%; max-width: 220px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #3b82f6;"
+                                onclick="openModal(this)" data-fullsrc="imagenes/extracto-codificado.png"
+                                alt="Extracto de observación con códigos">
+                                <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                                <span style="color: #60a5fa; font-size: 0.8rem; margin-top: 0.2rem;">clic</span>
+                            </div>
+                            <p style="color: #60a5fa; font-size: 0.85rem; font-weight: 600; margin: 0.5rem 0 0 0;">
+                                Extracto codificado</p>
+                            <p style="color: #e2e8f0; font-size: 0.75rem;">Observación participante</p>
+                        </div>
+                    </div>
+                    <div
+                        style="flex: 1 1 250px; background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 1rem; border-left: 4px solid #8b5cf6;">
+                        <div style="text-align: center;">
+                            <div class="zoomable-image"
+                                style="cursor: pointer; border-radius: 12px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; width: 100%; max-width: 220px; margin: 0 auto; box-shadow: 0 4px 10px rgba(0,0,0,0.3); border: 1px solid #8b5cf6;"
+                                onclick="openModal(this)" data-fullsrc="imagenes/cita-codigo.png"
+                                alt="Cita textual y código asociado">
+                                <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                                <span style="color: #a78bfa; font-size: 0.8rem; margin-top: 0.2rem;">clic</span>
+                            </div>
+                            <p style="color: #a78bfa; font-size: 0.85rem; font-weight: 600; margin: 0.5rem 0 0 0;">Cita
+                                + código</p>
+                            <p style="color: #e2e8f0; font-size: 0.75rem;">Descripción operativa</p>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;">
+                    <div
+                        style="flex: 1 1 180px; background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 0.8rem; border-top: 4px solid #14b8a6;">
+                        <div style="text-align: center;">
+                            <div class="zoomable-image"
+                                style="cursor: pointer; border-radius: 10px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.8rem; width: 100%; max-width: 160px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 1px solid #14b8a6;"
+                                onclick="openModal(this)" data-fullsrc="imagenes/sankey-narrativo.png"
+                                alt="Sankey narrativo: patrones recurrentes">
+                                <span style="font-size: 3rem; line-height: 1;">📊</span>
+                                <span style="color: #2dd4bf; font-size: 0.7rem; margin-top: 0.2rem;">clic</span>
+                            </div>
+                            <p style="color: #2dd4bf; font-size: 0.8rem; font-weight: 600; margin: 0.3rem 0 0 0;">Sankey
+                                narrativo</p>
+                        </div>
+                    </div>
+                    <div
+                        style="flex: 1 1 180px; background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 0.8rem; border-top: 4px solid #10b981;">
+                        <div style="text-align: center;">
+                            <div class="zoomable-image"
+                                style="cursor: pointer; border-radius: 10px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.8rem; width: 100%; max-width: 160px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 1px solid #10b981;"
+                                onclick="openModal(this)" data-fullsrc="imagenes/sankey-causal.png"
+                                alt="Sankey semántico-causal: efectos y consecuencias">
+                                <span style="font-size: 3rem; line-height: 1;">📊</span>
+                                <span style="color: #34d399; font-size: 0.7rem; margin-top: 0.2rem;">clic</span>
+                            </div>
+                            <p style="color: #34d399; font-size: 0.8rem; font-weight: 600; margin: 0.3rem 0 0 0;">Sankey
+                                causal</p>
+                        </div>
+                    </div>
+                    <div
+                        style="flex: 1 1 180px; background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 20px; padding: 0.8rem; border-top: 4px solid #3b82f6;">
+                        <div style="text-align: center;">
+                            <div class="zoomable-image"
+                                style="cursor: pointer; border-radius: 10px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.8rem; width: 100%; max-width: 160px; margin: 0 auto; box-shadow: 0 4px 8px rgba(0,0,0,0.3); border: 1px solid #3b82f6;"
+                                onclick="openModal(this)" data-fullsrc="imagenes/red-semantica.png"
+                                alt="Red semántica: registro complejo de la escena">
+                                <span style="font-size: 3rem; line-height: 1;">📊</span>
+                                <span style="color: #60a5fa; font-size: 0.7rem; margin-top: 0.2rem;">clic</span>
+                            </div>
+                            <p style="color: #60a5fa; font-size: 0.8rem; font-weight: 600; margin: 0.3rem 0 0 0;">Red
+                                semántica</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.75rem; margin-top: 1rem;">👆 Haz clic en cada
+                    icono 📊 para ampliar la imagen</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12 – ARQUITECTURA DE LA SÍNTESIS -->
+        <div class="slide" data-slide="12">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Arquitectura de la Síntesis
+                </h2>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.1); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-bottom: 6px solid #3b82f6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span style="font-size: 3rem; color: #60a5fa;">🧩</span>
+                        <h3 style="color: #60a5fa; font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem;">Códigos
+                            / Patrones</h3>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                            <strong>Subcategorías</strong>
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4;">Unidades mínimas de significado
+                            extraídas de observaciones y entrevistas.</p>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-bottom: 6px solid #8b5cf6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span style="font-size: 3rem; color: #a78bfa;">🧶</span>
+                        <h3 style="color: #a78bfa; font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem;">Tejidos
+                            Narrativos</h3>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                            <strong>Categorías</strong>
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4;">Agrupaciones de códigos que
+                            configuran temas recurrentes o dimensiones de la experiencia.</p>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.1); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.8rem 1.2rem; border-bottom: 6px solid #14b8a6; text-align: center; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <span style="font-size: 3rem; color: #2dd4bf;">🏛️</span>
+                        <h3 style="color: #2dd4bf; font-size: 1.5rem; font-weight: 700; margin: 1rem 0 0.5rem;">
+                            Macrotejidos</h3>
+                        <p style="color: #e2e8f0; font-size: 1rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                            <strong>Núcleos Categoriales</strong>
+                        </p>
+                        <p style="color: #cbd5e1; font-size: 0.9rem; line-height: 1.4;">Grandes estructuras de sentido
+                            que emergen de la integración de tejidos narrativos. Explican el fenómeno en su conjunto.
+                        </p>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem;">
+                    <span style="font-size: 2rem; color: #60a5fa;">↓</span>
+                    <span style="font-size: 2rem; color: #a78bfa;">↓</span>
+                    <span style="font-size: 2rem; color: #2dd4bf;">↓</span>
+                </div>
+                <div
+                    style="background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); border-radius: 30px; padding: 1.5rem 2rem; border: 1px solid #60a5fa60;">
+                    <p style="color: #f0f4ff; font-size: 1.1rem; line-height: 1.6; text-align: center; margin: 0;">Así
+                        como un tejido se forma con hilos que se entrelazan, nuestros datos se organizaron en tres
+                        niveles: <strong style="color: #60a5fa;">los códigos o patrones</strong> (subcategorías) son la
+                        materia prima; al agruparlos, obtenemos <strong style="color: #a78bfa;">tejidos
+                            narrativos</strong> (categorías); y estos, al integrarse, conforman los <strong
+                            style="color: #2dd4bf;">macrotejidos</strong> (núcleos categoriales) que entregan horizontes
+                        de sentido a la investigación.</p>
+                </div>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 13 – EL INSTANTE DE LA CONTEMPLACIÓN -->
+        <div class="slide" data-slide="13">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 1.5rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    El instante de la contemplación
+                </h2>
+                <p style="text-align: center; color: #a78bfa; font-size: 1.1rem; margin-bottom: 2rem;">Un informante
+                    clave: la aprehensión en silencio</p>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-bottom: 2rem;">
+                    <div style="flex: 0 1 250px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; width: 100%; max-width: 220px; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: 2px solid #60a5fa;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/contemplacion1.png"
+                            alt="Captura 1: Ensimismamiento en clase">
+                            <span style="font-size: 4rem; line-height: 1;">📊</span>
+                            <span style="color: #60a5fa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #60a5fa; font-size: 0.9rem; font-weight: 600; margin-top: 0.5rem;">
+                            Ensimismamiento</p>
+                    </div>
+                    <div style="flex: 0 1 250px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; width: 100%; max-width: 220px; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: 2px solid #a78bfa;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/contemplacion2.png"
+                            alt="Captura 2: La pausa fecunda">
+                            <span style="font-size: 4rem; line-height: 1;">📊</span>
+                            <span style="color: #a78bfa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #a78bfa; font-size: 0.9rem; font-weight: 600; margin-top: 0.5rem;">Pausa
+                            fecunda</p>
+                    </div>
+                    <div style="flex: 0 1 250px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(0,20,40,0.5); backdrop-filter: blur(4px); display: inline-flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem; width: 100%; max-width: 220px; box-shadow: 0 8px 16px rgba(0,0,0,0.4); border: 2px solid #2dd4bf;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/contemplacion3.png"
+                            alt="Captura 3: La mirada interior">
+                            <span style="font-size: 4rem; line-height: 1;">📊</span>
+                            <span style="color: #2dd4bf; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #2dd4bf; font-size: 0.9rem; font-weight: 600; margin-top: 0.5rem;">Mirada
+                            interior</p>
+                    </div>
+                </div>
+                <div
+                    style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1.5rem; background: rgba(0,0,0,0.2); backdrop-filter: blur(4px); border-radius: 30px; padding: 1.2rem 1.8rem; border: 1px solid #60a5fa60; margin-top: 1rem;">
+                    <img src="imagenes/ortega.png" alt="José Ortega y Gasset"
+                        style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid #2dd4bf; box-shadow: 0 0 12px rgba(45,212,191,0.5); flex-shrink: 0;">
+                    <div style="text-align: center;">
+                        <p style="color: #f0f4ff; font-size: 1rem; font-style: italic; line-height: 1.5; margin: 0;">“El
+                            hombre se ensimisma para poder contemplar la realidad, y al contemplarla, la aprehende.”</p>
+                        <p style="color: #b0d4ff; font-size: 0.9rem; margin-top: 0.3rem;">— José Ortega y Gasset</p>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 1.5rem;">👆 Haz clic en
+                    cada icono 📊 para ampliar la imagen</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 14 – VISUALIZACIÓN DE LA SÍNTESIS -->
+        <div class="slide" data-slide="14">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 1.5rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    Visualización de la Síntesis
+                </h2>
+                <p style="text-align: center; color: #a78bfa; font-size: 1.1rem; margin-bottom: 2rem;">Sankey de
+                    Ipseidad, Mímesis y Red Semántica de Federico: un estudiante paradigmático de la investigación</p>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem;">
+                    <div style="flex: 1 1 280px; max-width: 350px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 20px; background: rgba(59,130,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.5); border: 2px solid #60a5fa;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/sankey-ipseidad.png"
+                            alt="Sankey de Ipseidad: construcción narrativa del sujeto">
+                            <span style="font-size: 5rem; line-height: 1;">📊</span>
+                            <span style="color: #60a5fa; font-size: 1rem; margin-top: 0.5rem; font-weight: 600;">clic
+                                para ver</span>
+                        </div>
+                        <h3 style="color: #60a5fa; font-size: 1.3rem; font-weight: 700; margin: 1rem 0 0.3rem;">Ipseidad
+                        </h3>
+                        <p style="color: #e2e8f0; font-size: 0.95rem;">Flujos narrativos que configuran la identidad del
+                            sujeto.</p>
+                    </div>
+                    <div style="flex: 1 1 280px; max-width: 350px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 20px; background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.5); border: 2px solid #a78bfa;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/sankey-mimesis.png"
+                            alt="Sankey de Mímesis: proceso de prefiguración, configuración y refiguración">
+                            <span style="font-size: 5rem; line-height: 1;">📊</span>
+                            <span style="color: #a78bfa; font-size: 1rem; margin-top: 0.5rem; font-weight: 600;">clic
+                                para ver</span>
+                        </div>
+                        <h3 style="color: #a78bfa; font-size: 1.3rem; font-weight: 700; margin: 1rem 0 0.3rem;">Mímesis
+                            II del Estudiante</h3>
+                        <p style="color: #e2e8f0; font-size: 0.95rem;">Construcciones subjetivas del entorno reflejadas
+                            en el discurso.</p>
+                    </div>
+                    <div style="flex: 1 1 280px; max-width: 350px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 20px; background: rgba(20,184,166,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1rem; box-shadow: 0 8px 20px rgba(0,0,0,0.5); border: 2px solid #2dd4bf;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/red-estudiante.png"
+                            alt="Red semántica del estudiante paradigmático: categorías y relaciones">
+                            <span style="font-size: 5rem; line-height: 1;">📊</span>
+                            <span style="color: #2dd4bf; font-size: 1rem; margin-top: 0.5rem; font-weight: 600;">clic
+                                para ver</span>
+                        </div>
+                        <h3 style="color: #2dd4bf; font-size: 1.3rem; font-weight: 700; margin: 1rem 0 0.3rem;">Red
+                            Semántica</h3>
+                        <p style="color: #e2e8f0; font-size: 0.95rem;">Categorías y relaciones emergentes del discurso
+                            del estudiante.</p>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 2rem;">👆 Haz clic en cada
+                    icono 📊 para ver la imagen completa</p>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 15 – EMERGENCIA DE LOS MACROTEJIDOS -->
+        <div class="slide" data-slide="15">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 0.5rem; font-size: clamp(1.8rem, 5vw, 2.5rem);">
+                    Emergencia de los Macrotejidos:
+                </h2>
+                <p
+                    style="text-align: center; color: #a78bfa; font-size: 1.3rem; margin-bottom: 2rem; font-style: italic;">
+                    Ecos de las Observaciones y sus Réplicas en las Narrativas</p>
+                <h3 style="color: #60a5fa; margin-bottom: 1rem; font-size: 1.4rem;">Macrotejidos desde las observaciones
+                </h3>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-bottom: 3rem;">
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(59,130,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #3b82f6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/macrotejido1.png"
+                            alt="Macrotejido 1: [Fragmentación y Riesgo Atencional]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #60a5fa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #60a5fa; font-weight: 600; margin-top: 0.5rem;">Macrotejido 1: Fragmentación y
+                            Riesgo Atencional</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #8b5cf6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/macrotejido2.png"
+                            alt="Macrotejido 2: [Microclimas y Atmósferas de Aula]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #a78bfa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #a78bfa; font-weight: 600; margin-top: 0.5rem;">Macrotejido 2: Microclimas y
+                            Atmósferas de Aula</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(20,184,166,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #14b8a6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/macrotejido3.png"
+                            alt="Macrotejido 3: [Mediación y Gestión Docente]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #2dd4bf; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #2dd4bf; font-weight: 600; margin-top: 0.5rem;">Macrotejido 3: Mediación y
+                            Gestión Docente</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(16,185,129,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #10b981;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/macrotejido4.png"
+                            alt="Macrotejido 4: [Transferencia Activación y Proactividad]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #34d399; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #34d399; font-weight: 600; margin-top: 0.5rem;">Macrotejido 4: Transferencia
+                            Activación y Proactividad</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(249,115,22,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #f97316;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/macrotejido5.png"
+                            alt="Macrotejido 5: [Diversidad y Evaluación Situada]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #f97316; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #f97316; font-weight: 600; margin-top: 0.5rem;">Macrotejido 5: Diversidad y
+                            Evaluación Situada</p>
+                    </div>
+                </div>
+                <h3 style="color: #a78bfa; margin-bottom: 1rem; font-size: 1.4rem;">Sankey transversales: observaciones
+                    ↔ entrevistas</h3>
+                <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem;">
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(59,130,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #3b82f6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/transversal1.png"
+                            alt="Sankey transversal: [Fragmentación y Riesgo Atencional]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #60a5fa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #60a5fa; font-weight: 600; margin-top: 0.5rem;">Transversal 1</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(139,92,246,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #8b5cf6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/transversal2.png"
+                            alt="Sankey transversal: [Microclimas y Atmósferas de Aula]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #a78bfa; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #a78bfa; font-weight: 600; margin-top: 0.5rem;">Transversal 2</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(20,184,166,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #14b8a6;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/transversal3.png"
+                            alt="Sankey transversal: [Mediación y Gestión Docente]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #2dd4bf; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #2dd4bf; font-weight: 600; margin-top: 0.5rem;">Transversal 3</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(16,185,129,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #10b981;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/transversal4.png"
+                            alt="Sankey transversal: [Transferencia Activación y Proactividad]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #34d399; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #34d399; font-weight: 600; margin-top: 0.5rem;">Transversal 4</p>
+                    </div>
+                    <div style="flex: 1 1 160px; max-width: 200px; text-align: center;">
+                        <div class="zoomable-image"
+                            style="cursor: pointer; border-radius: 16px; background: rgba(249,115,22,0.1); backdrop-filter: blur(4px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 0.5rem; box-shadow: 0 6px 14px rgba(0,0,0,0.3); border: 2px solid #f97316;"
+                            onclick="openModal(this)" data-fullsrc="imagenes/transversal5.png"
+                            alt="Sankey transversal: [Diversidad y Evaluación Situada]">
+                            <span style="font-size: 3.5rem; line-height: 1;">📊</span>
+                            <span style="color: #f97316; font-size: 0.8rem; margin-top: 0.3rem;">clic</span>
+                        </div>
+                        <p style="color: #f97316; font-weight: 600; margin-top: 0.5rem;">Transversal 5</p>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 2rem;">👆 Haz clic en cada
+                    icono 📊 para ver el sankey completo</p>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 16 – REFIGURACIONES POR MACRO-TEJIDOS -->
+        <div class="slide" data-slide="16">
+            <div style="max-width: 1300px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 0.5rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Refiguraciones por Macro-tejidos
+                </h2>
+                <p
+                    style="text-align: center; color: #a78bfa; font-size: 1.5rem; margin-bottom: 2rem; font-style: italic;">
+                    — Mímesis III —</p>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem;">
+                    <div
+                        style="background: rgba(59,130,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #3b82f6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #3b82f620; padding: 0.5rem; border-radius: 50%;">📱</span>
+                            <h3 style="color: #60a5fa; font-size: 1.2rem; font-weight: 700; margin: 0;">Fragmentación y
+                                Riesgo Atencional</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>Cuando la atención se fragmenta</strong> · El ruido, los smartphones y la disrupción
+                            como ciclo. La mediación cordial como alternativa al castigo.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #3b82f620; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #3b82f6;"
+                                onclick='openTextModal("Fragmentación y Riesgo Atencional", "<strong>🔍 Ideas clave:</strong><br><br>• La desatención es la puerta de entrada a la disrupción.<br>• El ruido (físico y digital) se retroalimenta.<br>• Los smartphones son distractores transversales.<br>• La solución no es punitiva: se necesita mediación horizontal, vinculación con representantes y transformación del sistema.<br>• El docente no puede cargar solo con el problema; la institución debe supervisar pasillos y espacios.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #60a5fa; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                    <div
+                        style="background: rgba(139,92,246,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #8b5cf6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #8b5cf620; padding: 0.5rem; border-radius: 50%;">👥</span>
+                            <h3 style="color: #a78bfa; font-size: 1.2rem; font-weight: 700; margin: 0;">El Aprendizaje
+                                como Acto Compartido</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>Aprendizaje social</strong> · Los grupos pueden generar disrupción o proactividad.
+                            Los microclimas proactivos materializan la ZDP y fortalecen el aula.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #8b5cf620; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #8b5cf6;"
+                                onclick='openTextModal("El Aprendizaje como Acto Compartido", "<strong>🔍 Ideas clave:</strong><br><br>• El ser humano es social por naturaleza (Aristóteles, Vygotsky).<br>• La asociación entre pares puede ser disruptiva o proactiva.<br>• Los grupos proactivos son aliados del docente: median entre pares y refuerzan el orden.<br>• La Zona de Desarrollo Próximo se materializa en estos microclimas.<br>• Favorecen ambientes emocional y cognitivamente adecuados para el aprendizaje.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #a78bfa; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                    <div
+                        style="background: rgba(20,184,166,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #14b8a6; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #14b8a620; padding: 0.5rem; border-radius: 50%;">🤝</span>
+                            <h3 style="color: #2dd4bf; font-size: 1.2rem; font-weight: 700; margin: 0;">Mediación y
+                                Gestión Docente</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>El vínculo óptimo</strong> · Autoridad cordial, confianza con límites. La mediación
+                            efectiva previene la dependencia y el desafío.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #14b8a620; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #14b8a6;"
+                                onclick='openTextModal("Mediación y Gestión Docente", "<strong>🔍 Ideas clave:</strong><br><br>• La mediación es el pilar del proceso educativo: transmite conocimientos, valores y emociones.<br>• El vínculo docente-estudiante debe ser cordial, no autoritario ni permisivo.<br>• La confianza incentiva la participación; su ausencia genera inhibición.<br>• Un mismo estudiante puede responder de forma opuesta según el vínculo con el docente.<br>• El exceso de mediación puede crear dependencia; el equilibrio es clave.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #2dd4bf; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                    <div
+                        style="background: rgba(16,185,129,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #10b981; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #10b98120; padding: 0.5rem; border-radius: 50%;">⚡</span>
+                            <h3 style="color: #34d399; font-size: 1.2rem; font-weight: 700; margin: 0;">Transferencia,
+                                Activación y Proactividad</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>Activación metacognitiva</strong> · Estrategias como el pase de lista, los
+                            ejercicios guiados y la recuperación de saberes previos activan la metacognición.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #10b98120; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #10b981;"
+                                onclick='openTextModal("Transferencia, Activación y Proactividad", "<strong>🔍 Ideas clave:</strong><br><br>• La metacognición es el patrón más recurrente, pero necesita activarse intencionalmente.<br>• Rutinas simples (pase de lista) ya generan activación.<br>• Guiar la resolución de ejercicios evita la dependencia.<br>• Una clase de repaso (ej. Teoría Celular) demostró que los aprendizajes se consolidan incluso meses después.<br>• Las motivaciones intrínsecas (vocación) potencian la activación.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #34d399; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                    <div
+                        style="background: rgba(249,115,22,0.08); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #f97316; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #f9731620; padding: 0.5rem; border-radius: 50%;">🧠</span>
+                            <h3 style="color: #f97316; font-size: 1.2rem; font-weight: 700; margin: 0;">Neurodiversidad
+                            </h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>Crítica a la normalización</strong> · El sistema homogeneiza e invisibiliza tanto a
+                            quienes no tienen diagnóstico como a estudiantes con altas capacidades. Se propone
+                            evaluación situada.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #f9731620; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #f97316;"
+                                onclick='openTextModal("Neurodiversidad", "<strong>🔍 Ideas clave:</strong><br><br>• El sistema educativo gestiona los aprendizajes de forma homogénea, ignorando neurodiversidades no diagnosticadas.<br>• Todos los seres humanos somos diversos; el problema es la rigidez del sistema.<br>• Se invisibiliza tanto a estudiantes sin diagnóstico como a aquellos con altas capacidades.<br>• La evaluación situada es una alternativa para reconocer la singularidad.<br>• La <em>tara epistémica</em> limita el desarrollo de capacidades.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #f97316; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                    <div
+                        style="background: rgba(255,255,255,0.05); backdrop-filter: blur(4px); border-radius: 24px; padding: 1.5rem; border-left: 6px solid #94a3b8; box-shadow: 0 6px 14px rgba(0,0,0,0.2);">
+                        <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;"><span
+                                style="font-size: 2.5rem; background: #94a3b820; padding: 0.5rem; border-radius: 50%;">💭</span>
+                            <h3 style="color: #cbd5e1; font-size: 1.2rem; font-weight: 700; margin: 0;">Reflexiones
+                                Finales</h3>
+                        </div>
+                        <p style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.4; margin-bottom: 0.8rem;">
+                            <strong>La mediación como horizonte</strong> · La investigación cualitativa permite
+                            hallazgos profundos. La mediación pedagógica es el fenómeno central, más allá de la
+                            recurrencia de la metacognición.
+                        </p>
+                        <div style="text-align: right;"><span class="zoomable-image"
+                                style="cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem; background: #94a3b820; padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid #94a3b8;"
+                                onclick='openTextModal("Reflexiones Finales", "<strong>🔍 Ideas clave:</strong><br><br>• La investigación cualitativa identifica líneas de sentido profundas, no solo recurrencias.<br>• La neurodiversidad y la evaluación situada son hallazgos significativos.<br>• Si el estudio hubiera sido cuantitativo, se habría centrado solo en metacognición.<br>• La mediación pedagógica es el fenómeno central que articula lo axiológico, epistémico y emocional.<br>• Invitación a los docentes: pedagogía situada, vinculante y atenta a las particularidades del estudiante.")'><span
+                                    style="font-size: 1.2rem;">📄</span><span
+                                    style="color: #cbd5e1; font-size: 0.85rem;">Ver resumen</span></span></div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-top: 2rem;">👆 Haz clic en 📄
+                    para leer un resumen de cada refiguración</p>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #14b8a6); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 17 – CIERRE: ORTEGA Y GASSET -->
+        <div class="slide" data-slide="17">
+            <div style="max-width: 1000px; width: 100%; padding: 2rem; text-align: center;">
+                <h2 class="section-title gradient-text"
+                    style="font-size: clamp(2.5rem, 6vw, 3.5rem); margin-bottom: 2rem;">Muchas Gracias</h2>
+                <div
+                    style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3rem; background: white; border-radius: 50px; padding: 2.5rem 3rem; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;">
+                    <div style="flex-shrink: 0;"><img src="imagenes/ortega.png" alt="José Ortega y Gasset"
+                            style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #a78bfa; box-shadow: 0 0 20px rgba(167,139,250,0.5);">
+                    </div>
+                    <div style="flex: 1; min-width: 300px; text-align: left;">
+                        <div style="position: relative;">
+                            <span
+                                style="font-size: 4rem; color: #a78bfa; opacity: 0.2; position: absolute; top: -30px; left: -20px;">“</span>
+                            <p
+                                style="color: #2a2a2a; font-size: 1.8rem; line-height: 1.5; font-style: italic; margin: 0; padding-left: 2rem;">
+                                Camina lento, no te apresures,<br>que a donde tienes que llegar<br>es a ti mismo.</p>
+                            <span
+                                style="font-size: 4rem; color: #a78bfa; opacity: 0.2; position: absolute; bottom: -40px; right: 0;">”</span>
+                        </div>
+                        <p style="color: #6d28d9; font-size: 1.2rem; margin-top: 2rem; text-align: right;">— José Ortega
+                            y Gasset</p>
+                    </div>
+                </div>
+                <div
+                    style="margin-top: 3rem; background: #f5f5f5; border-radius: 40px; padding: 1.2rem 2rem; display: inline-block; border: 1px solid #8b5cf6;">
+                    <p style="color: #2a2a2a; font-size: 1.1rem;">Universidad de Carabobo · Maestría en Investigación
+                        Educativa<br><span style="color: #6d28d9;">Marzo de 2026</span></p>
+                </div>
+                <div style="margin-top: 2.5rem; text-align: center; opacity: 0.5;">
+                    <span
+                        style="display: inline-block; width: 120px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6, #2dd4bf); border-radius: 2px;"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 18 – REFERENCIAS BIBLIOGRÁFICAS -->
+        <div class="slide" data-slide="18">
+            <div style="max-width: 1200px; width: 100%; padding: 1rem;">
+                <h2 class="section-title gradient-text"
+                    style="text-align: center; margin-bottom: 2rem; font-size: clamp(2rem, 5vw, 2.8rem);">
+                    Referencias Bibliográficas
+                </h2>
+                <div
+                    style="background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); border-radius: 30px; padding: 2rem; border: 1px solid #60a5fa60; max-height: 60vh; overflow-y: auto;">
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Agustín de Hipona. (2010). <em>Confesiones</em> (A. Encuentra-Ortega, Trad.). España: Editorial
+                        Gredos.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Aristóteles. (1979). <em>Poética</em> (Goya y Muniaín, Trad.). Argentina: Educa.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Attewell, P. (2009). ¿Qué es una competencia? <em>Pedagogía social. Revista
+                            interuniversitaria</em>, (16), 21-43.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Bunge, M. (1994). <em>La Ciencia. Su Método y su Filosofía</em>. Argentina. Editorial
+                        Debolsillo.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Calderón-Cordero, A.I. y Narváez C. (2025). La Enseñanza de la Química: Un Aporte Teórico desde
+                        las Competencias Científicas [Tesis Doctoral, Universidad Pedagógica Experimental Libertador].
+                        <em>https://espacio.digital.upel.edu.ve/index.php/TD/article/view/2131/2016</em>
+                    </div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Constitución de la República Bolivariana de Venezuela (1999). Gaceta Oficial de la República
+                        Bolivariana de Venezuela Extraordinaria Nº 36680, diciembre 30, 1999.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Gibbs, G. (2013). <em>El Análisis de Datos Cualitativos en Investigación Cualitativa</em>.
+                        España: Morata.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Gurdián-Fernández, A. (2007). <em>El Paradigma Cualitativo en la Investigación
+                            Socio-Educativa</em>. Costa Rica: Colección Ider.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ley Orgánica de Educación (2005). Gaceta Oficial de la República Bolivariana de Venezuela
+                        Extraordinaria Nº 5.929, agosto 15, 2009.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        McKernan, J. (1999). <em>Investigación-acción y curriculum: métodos y recursos para
+                            profesionales reflexivos</em>. España: Morata.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Mendoza, C.T. y Calderón M.J. (2025). Familias Disfuncionales y su Intervención en el Proceso de
+                        Aprendizaje en Educación Media [Tesis Doctoral, Universidad Pedagógica Experimental Libertador].
+                        <em>https://espacio.digital.upel.edu.ve/index.php/TD/article/view/2176/2065</em>
+                    </div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ministerio del Poder Popular para la Educación. (2017, noviembre 17). Orientaciones a seguir en
+                        el proceso de implementación y aplicación del Plan de Estudios en el nivel de Educación Media
+                        General, a partir de la Resolución DM/Nº 033 (Gaceta Oficial 41.221, agosto 24, 2017).</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ninanya-Tantavilca, K. F. (2023). Percepciones docentes sobre la concreción del enfoque por
+                        competencias en las experiencias de aprendizaje de la competencia “construye interpretaciones
+                        históricas” en el nivel secundario de una institución pública [Trabajo de Maestría, Pontificia
+                        Universidad Católica del Perú].
+                        <em>https://tesis.pucp.edu.pe/server/api/core/bitstreams/ed31b306-05fb-49ef-ae53-ebe8275bab45/content</em>
+                    </div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ortega y Gasset, J. (1966). <em>Obras Completas de José Ortega y Gasset Tomo IV</em> (6ta Ed.).
+                        España: Revista de Occidente.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ortega y Gasset, J. (2004). <em>¿Qué es Filosofía? Unas Lecciones de Metafísica</em>. México:
+                        Editorial Porrúa.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Piaget, J. (1999). <em>La psicología de la inteligencia</em>. España: Crítica.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ricœur, P. (2002). <em>Del texto a la acción: ensayos de hermenéutica II</em>. España: Fondo de
+                        Cultura Económica.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ricœur, P. (2004). <em>Tiempo y Narración: Vol. I. Configuración del Tiempo en el Relato
+                            Histórico</em>. México: Siglo XXI Editores.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ricœur, P. (2006). <em>Sí mismo como otro</em>. España: Siglo Veintiuno.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Ricœur, P. (2009). <em>Tiempo y narración: Vol. III: El tiempo narrado</em>. España: Siglo
+                        Veintiuno.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Rivero y Pacheco (2021). Desarrollo de competencias científicas investigativas: percepciones
+                        sobre sus prácticas pedagógicas. <em>Boletín Redipe, 10</em>(3), 107-118.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Spencer, L., & Spencer, S. (1993). <em>Evaluación de competencia en el trabajo. Modelo para un
+                            Desempeño Superior</em>. Estados Unidos de América: John Wiley & Sons.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Tangoa-Bernardo, E. (2023). Estrategias metacognitivas en el proceso de aprendizaje en
+                        estudiantes de una universidad nacional desde la perspectiva docente, Huánuco, 2023 [Trabajo de
+                        Maestría, Universidad César Vallejo].
+                        <em>https://repositorio.ucv.edu.pe/bitstream/handle/20.500.12692/140751/Tangoa_BE-SD.pdf?sequence=1&isAllowed=y</em>
+                    </div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Taylor, S. J., & Bogdan, R. (1994). <em>Introducción a los métodos cualitativos de
+                            investigación: la búsqueda de significados</em> (J. Piatigorsky, Trad.). Argentina: Paidós.
+                    </div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Tobón, S. (2004). <em>Formación basada en competencias: pensamiento complejo, diseño curricular
+                            y didáctica</em>. Colombia: Ecoe.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        UNESCO (s.f.). Áreas de competencia. <em>https://www.unesco.org/es/our-expertise</em></div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Universidad de Carabobo. (2021). Reglamento de las Comisiones de Bioética y Bioseguridad.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Vasilachis de Gialdino, I. (2006). <em>Estrategias de investigación cualitativa</em>. España:
+                        Gedisa Editorial.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Vygotsky, L. S. (2009). El desarrollo de los procesos psicológicos superiores: interacción entre
+                        enseñanza y desarrollo. En <em>Estrategias de aprendizaje en la nueva universidad cubana</em>.
+                        Cuba: Editorial Universitaria.</div>
+                    <div
+                        style="margin-bottom: 0.8rem; padding-left: 1.5rem; text-indent: -1.5rem; color: #e2e8f0; font-size: 0.95rem; line-height: 1.5;">
+                        Vygotsky, L.S. (2021). <em>Pensamiento y lenguaje</em>. Cuba: Editorial Pueblo y Educación.
+                    </div>
+                </div>
+                <div style="margin-top: 2rem; text-align: center; opacity: 0.3;">
+                    <span
+                        style="display: inline-block; width: 80px; height: 2px; background: linear-gradient(90deg, #60a5fa, #8b5cf6); border-radius: 2px;"></span>
+                </div>
+                <p style="text-align: center; color: #94a3b8; font-size: 0.8rem; margin-top: 1rem;">⬇️ Desplázate para
+                    ver todas las referencias</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-arrow prev" onclick="prevSlide()"><svg viewBox="0 0 24 24">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg></div>
+    <div class="nav-arrow next" onclick="nextSlide()"><svg viewBox="0 0 24 24">
+            <polyline points="9 6 15 12 9 18"></polyline>
+        </svg></div>
+    <div class="nav-dots" id="navDots"></div>
+    <div class="slide-counter" id="slideCounter">1 / 19</div>
+
+    <script>
+        const canvas = document.getElementById('neuralCanvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, nodes = [];
+        const NODE_COUNT = 50, CONN_DIST = 140, MOUSE_RADIUS = 150;
+        let mouse = { x: -1000, y: -1000 };
+
+        function resizeCanvas() { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        class Node {
+            constructor() {
+                this.x = Math.random() * w; this.y = Math.random() * h;
+                this.vx = (Math.random() - 0.5) * 0.8; this.vy = (Math.random() - 0.5) * 0.8;
+                this.rad = Math.random() * 1.8 + 1.2; this.baseRad = this.rad;
+                this.color = `hsl(${Math.floor(Math.random() * 60 + 200)}, 50%, 45%)`;
+                this.phase = Math.random() * 2 * Math.PI;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                if (this.x < 0 || this.x > w) this.vx *= -1; if (this.y < 0 || this.y > h) this.vy *= -1;
+                this.x = Math.max(0, Math.min(w, this.x)); this.y = Math.max(0, Math.min(h, this.y));
+                const dx = mouse.x - this.x, dy = mouse.y - this.y, dist = Math.hypot(dx, dy);
+                if (dist < MOUSE_RADIUS) {
+                    const f = (MOUSE_RADIUS - dist) / MOUSE_RADIUS;
+                    this.vx -= (dx / dist) * f * 0.05; this.vy -= (dy / dist) * f * 0.05;
+                    this.rad = this.baseRad + f * 2;
+                } else this.rad = this.baseRad;
+                this.phase += 0.03;
+                this.vx *= 0.9999;
+                this.vy *= 0.9999;
+            }
+            draw() {
+                const pulse = 1 + Math.sin(this.phase) * 0.15, r = this.rad * pulse;
+                ctx.beginPath(); ctx.arc(this.x, this.y, r * 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.color.replace('60%', '15%').replace('hsl', 'hsla').replace(')', ', 0.15)'); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.shadowBlur = 12; ctx.shadowColor = this.color; ctx.fill(); ctx.shadowBlur = 0;
+            }
+        }
+        function initNodes() { nodes = []; for (let i = 0; i < NODE_COUNT; i++) nodes.push(new Node()); }
+        initNodes();
+        function drawConnections() {
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y, dist = Math.hypot(dx, dy);
+                    if (dist < CONN_DIST) {
+                        const op = (1 - dist / CONN_DIST) * 0.25;
+                        ctx.beginPath(); ctx.moveTo(nodes[i].x, nodes[i].y); ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.strokeStyle = `rgba(80, 120, 180, ${op})`; ctx.lineWidth = op * 1.8; ctx.stroke();
+                    }
+                }
+            }
+        }
+        function drawMouseConnections() {
+            for (let n of nodes) {
+                const dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+                if (dist < MOUSE_RADIUS) {
+                    const op = (1 - dist / MOUSE_RADIUS) * 0.4;
+                    ctx.beginPath(); ctx.moveTo(n.x, n.y); ctx.lineTo(mouse.x, mouse.y);
+                    ctx.strokeStyle = `rgba(80,100,160,${op})`; ctx.lineWidth = op * 1.5; ctx.stroke();
+                }
+            }
+        }
+        function animate() { ctx.clearRect(0, 0, w, h); drawConnections(); drawMouseConnections(); nodes.forEach(n => { n.update(); n.draw(); }); requestAnimationFrame(animate); }
+        animate();
+        document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+        document.addEventListener('touchmove', e => { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; });
+        document.addEventListener('mouseleave', () => { mouse.x = -1000; mouse.y = -1000; });
+        document.addEventListener('touchend', () => { mouse.x = -1000; mouse.y = -1000; });
+
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let current = 0;
+        const progress = document.getElementById('progressBar');
+        const counter = document.getElementById('slideCounter');
+        const dotsContainer = document.getElementById('navDots');
+
+        function createDots() {
+            dotsContainer.innerHTML = '';
+            for (let i = 0; i < totalSlides; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'nav-dot' + (i === current ? ' active' : '');
+                dot.onclick = () => goToSlide(i);
+                dotsContainer.appendChild(dot);
+            }
+        }
+        function goToSlide(idx) {
+            slides[current].classList.remove('active');
+            slides[current].classList.add('exit-left');
+            setTimeout(() => slides[current].classList.remove('exit-left'), 600);
+            current = idx;
+            slides[current].classList.add('active');
+            document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === current));
+            progress.style.width = ((current + 1) / totalSlides * 100) + '%';
+            counter.textContent = `${current + 1} / ${totalSlides}`;
+        }
+        function nextSlide() { if (totalSlides > 1) goToSlide((current + 1) % totalSlides); }
+        function prevSlide() { if (totalSlides > 1) goToSlide((current - 1 + totalSlides) % totalSlides); }
+        document.addEventListener('keydown', e => {
+            if (totalSlides <= 1) return;
+            if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); prevSlide(); }
+        });
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+        document.addEventListener('touchend', e => {
+            if (totalSlides <= 1) return;
+            const diff = touchStartX - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) diff > 0 ? nextSlide() : prevSlide();
+        });
+        createDots();
+        progress.style.width = (1 / totalSlides * 100) + '%';
+        counter.textContent = `1 / ${totalSlides}`;
+    </script>
+
+    <div id="imageModal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);"
+        onclick="closeModal()">
+        <span
+            style="position: absolute; top: 30px; right: 50px; color: white; font-size: 3rem; cursor: pointer; z-index: 10000;"
+            onclick="closeModal(); event.stopPropagation();">&times;</span>
+        <div style="max-width: 90%; max-height: 90%; display: flex; justify-content: center; align-items: center;"
+            onclick="event.stopPropagation()">
+            <img id="modalImage" src="" alt="Ampliación"
+                style="max-width: 100%; max-height: 90vh; border-radius: 16px; box-shadow: 0 0 30px rgba(255,255,255,0.2); border: 4px solid white;">
+        </div>
+        <div id="modalCaption"
+            style="position: absolute; bottom: 30px; left: 0; width: 100%; text-align: center; color: #ccc; font-size: 1.2rem; text-shadow: 0 2px 5px black;">
+        </div>
+    </div>
+
+    <script>
+        function openModal(element) {
+            const fullSrc = element.getAttribute('data-fullsrc');
+            const caption = element.getAttribute('alt') || '';
+            document.getElementById('modalImage').src = fullSrc;
+            document.getElementById('modalCaption').innerText = caption;
+            document.getElementById('imageModal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        function openTextModal(titulo, contenidoHTML) {
+            let modal = document.getElementById('textModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'textModal';
+                modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; justify-content: center; align-items: center; backdrop-filter: blur(8px);';
+                modal.onclick = closeTextModal;
+                modal.innerHTML = `
+            <span style="position: absolute; top: 30px; right: 50px; color: white; font-size: 3rem; cursor: pointer; z-index: 10000;" onclick="closeTextModal(); event.stopPropagation();">&times;</span>
+            <div style="max-width: 700px; max-height: 80vh; background: #0e1a2b; border-radius: 24px; padding: 2rem; overflow-y: auto; border: 2px solid #60a5fa; box-shadow: 0 0 30px rgba(96,165,250,0.3);" onclick="event.stopPropagation()">
+                <h2 style="color: #a78bfa; margin-bottom: 1rem; font-size: 1.8rem;" id="textModalTitle"></h2>
+                <div style="color: #e2e8f0; font-size: 1rem; line-height: 1.6;" id="textModalContent"></div>
+            </div>
+        `;
+                document.body.appendChild(modal);
+            }
+            document.getElementById('textModalTitle').innerText = titulo;
+            document.getElementById('textModalContent').innerHTML = contenidoHTML;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeTextModal() {
+            const modal = document.getElementById('textModal');
+            if (modal) modal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    </script>
+</body>
+
+</html>
