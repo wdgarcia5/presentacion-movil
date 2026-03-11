@@ -264,164 +264,652 @@
 
         /* ========== RESPONSIVE: MOBILE LANDSCAPE — NO SCROLL ========== */
         @media (max-width: 900px) and (orientation: landscape) {
-            /* --- BASE: SIN SCROLL EN NINGUNA SLIDE (excepto referencias) --- */
+
+            /* ---- Layout base: NO SCROLL ---- */
             .slide {
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-                padding: 0.2rem 2rem !important;
+                padding: 0.15rem 2.8rem;
+                justify-content: center;
                 overflow: hidden !important;
-                max-height: 100vh !important;
-                height: 100vh !important;
+                max-height: 100vh;
             }
 
-            .slide > div {
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-                width: 100% !important;
-                max-height: 100% !important;
-                overflow: hidden !important;
-                padding: 0 !important;
-                margin: 0 !important;
+            .slide>div {
+                padding: 0.15rem 0.3rem !important;
+                max-height: calc(100vh - 30px);
+                overflow: hidden;
             }
 
-            /* Para contenedores con grid */
-            .slide > div[style*="display: grid"] {
-                display: grid !important;
-                align-items: stretch !important;
-                justify-content: center !important;
-                gap: 0.2rem !important;
-            }
-
-            /* --- TIPOGRAFÍA ESCALADA CON vh + CLAMP --- */
-            h1, h2, h3, h4, h5, h6, p, li, span, div, strong, em {
-                font-size: clamp(0.6rem, 2.2vh, 1.2rem) !important;
-                line-height: 1.2 !important;
-                margin: 0.1rem 0 !important;
-            }
-
+            /* ---- Tipografía ultra-compacta ---- */
             h1 {
-                font-size: clamp(1rem, 4vh, 2rem) !important;
-            }
-            h2 {
-                font-size: clamp(0.9rem, 3.5vh, 1.8rem) !important;
-            }
-            h3 {
-                font-size: clamp(0.8rem, 3vh, 1.5rem) !important;
+                font-size: clamp(0.95rem, 3.2vw, 1.5rem) !important;
+                margin-bottom: 0.2rem !important;
+                line-height: 1.2 !important;
             }
 
-            /* --- OCULTAR ELEMENTOS QUE ROBAN ESPACIO --- */
+            h2 {
+                font-size: clamp(0.85rem, 2.8vw, 1.3rem) !important;
+                margin-bottom: 0.2rem !important;
+                line-height: 1.2 !important;
+            }
+
+            h3 {
+                font-size: clamp(0.65rem, 2vw, 0.9rem) !important;
+                margin-bottom: 0.15rem !important;
+                line-height: 1.2 !important;
+            }
+
+            h4 {
+                font-size: clamp(0.6rem, 1.8vw, 0.8rem) !important;
+                margin-bottom: 0.1rem !important;
+                line-height: 1.2 !important;
+            }
+
+            h5 {
+                font-size: clamp(0.55rem, 1.6vw, 0.75rem) !important;
+                line-height: 1.2 !important;
+            }
+
+            p,
+            li {
+                font-size: 0.55rem !important;
+                line-height: 1.2 !important;
+            }
+
+            em,
+            strong {
+                font-size: inherit !important;
+            }
+
+            /* ---- OCULTAR elementos decorativos ---- */
             .brain-emoji,
-            .slide .timeline-connector,
-            .slide div[style*="position: absolute"]:not([class*="nav-"]):not([class*="progress"]),
-            .slide img[style*="width: 110px"],
-            .slide img[style*="width: 150px"],
-            .slide span[style*="font-size: 4rem"],
-            .slide span[style*="font-size: 5rem"],
-            .slide div[style*="border: 1px dashed"],
-            .slide p[style*="font-style: italic"]:not(.keep),
-            .slide div[style*="text-align: right"] {
+            .slide div[style*="margin-top: 2.2rem"][style*="text-align: center"],
+            .slide div[style*="margin-top: 2.5rem"][style*="text-align: center"],
+            .slide div[style*="margin-top: 2rem"][style*="text-align: center"],
+            .slide div[style*="margin-top: 0.5rem"][style*="opacity"],
+            .slide>div>p[style*="color: #94a3b8"][style*="margin-top"],
+            .slide p[style*="font-size: 0.8rem"][style*="margin-top"],
+            .slide p[style*="font-size: 0.75rem"],
+            .timeline-connector {
                 display: none !important;
             }
 
-            /* --- REDUCIR ÍCONOS GRANDES --- */
-            .slide span[style*="font-size: 2.5rem"],
-            .slide span[style*="font-size: 2.8rem"],
-            .slide span[style*="font-size: 3rem"] {
-                font-size: clamp(1rem, 4vh, 2rem) !important;
-            }
-
-            .slide span[style*="font-size: 2rem"] {
-                font-size: clamp(0.8rem, 3vh, 1.5rem) !important;
-            }
-
-            /* --- IMÁGENES PEQUEÑAS --- */
-            .slide img[style*="width: 55px"],
-            .slide img[style*="width: 60px"],
-            .slide img[style*="width: 50px"] {
-                width: clamp(2rem, 5vh, 3rem) !important;
-                height: auto !important;
-            }
-
-            /* --- ZOOMABLE IMAGES --- */
-            .zoomable-image {
-                padding: 0.2rem !important;
-                max-width: 15vh !important;
-                margin: 0 auto !important;
-            }
-
-            .zoomable-image span[style*="font-size: 4rem"] {
-                font-size: clamp(2rem, 6vh, 3rem) !important;
-            }
-
-            /* --- GRILLAS COMPRIMIDAS --- */
+            /* ---- Grids: minmax agresivos ---- */
             .slide div[style*="display: grid"] {
-                grid-template-columns: repeat(auto-fit, minmax(12vh, 1fr)) !important;
-                gap: 0.2rem !important;
-            }
-
-            /* Slide 12: forzar 2 columnas en lugar de 3 */
-            .slide[data-slide="12"] div[style*="repeat(3, 1fr)"] {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-
-            /* Slide 8: mantener 2 columnas */
-            .slide[data-slide="8"] div[style*="repeat(2, 1fr)"] {
-                grid-template-columns: repeat(2, 1fr) !important;
-            }
-
-            /* --- MÁRGENES Y PADDING MÍNIMOS --- */
-            .slide div[style*="padding: 1.5rem"],
-            .slide div[style*="padding: 2rem"],
-            .slide div[style*="padding: 1.8rem"] {
-                padding: 0.5rem !important;
-            }
-
-            .slide div[style*="margin-bottom: 2rem"],
-            .slide div[style*="margin-bottom: 1.5rem"] {
-                margin-bottom: 0.2rem !important;
-            }
-
-            /* --- REFERENCIAS: scroll permitido solo aquí --- */
-            .slide[data-slide="18"] > div {
-                overflow-y: auto !important;
-                max-height: 90vh !important;
-            }
-
-            /* --- NAVEGACIÓN COMPACTA --- */
-            .nav-arrow {
-                width: clamp(2rem, 4vh, 3rem) !important;
-                height: clamp(3rem, 6vh, 4rem) !important;
-            }
-
-            .nav-arrow svg {
-                width: clamp(1rem, 2.5vh, 1.5rem) !important;
-                height: clamp(1rem, 2.5vh, 1.5rem) !important;
-            }
-
-            .nav-dots {
-                bottom: 0.2rem !important;
-                padding: 0.2rem 0.8rem !important;
                 gap: 0.3rem !important;
             }
 
+            .slide div[style*="minmax(300px"] {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+            }
+
+            .slide div[style*="minmax(280px"] {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+            }
+
+            .slide div[style*="minmax(260px"] {
+                grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)) !important;
+            }
+
+            .slide div[style*="minmax(250px"] {
+                grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)) !important;
+            }
+
+            .slide div[style*="minmax(240px"] {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+            }
+
+            /* Slide 12: 3 cols fijas → auto-fit */
+            .slide[data-slide="12"] div[style*="repeat(3, 1fr)"] {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 0.3rem !important;
+            }
+
+            /* Slide 8: 2 cols fijas → mantener 2 */
+            .slide[data-slide="8"] div[style*="repeat(2, 1fr)"] {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.3rem !important;
+            }
+
+            /* ---- Cards y contenedores: máxima compresión ---- */
+            .fundamento-item,
+            .slide div[style*="border-left: 6px"],
+            .slide div[style*="border-left: 5px"],
+            .slide div[style*="border-left: 4px"],
+            .slide div[style*="border-left: 8px"],
+            .slide div[style*="border-top: 4px"],
+            .slide div[style*="border-top: 5px"],
+            .slide div[style*="border-top: 6px"],
+            .slide div[style*="border-bottom: 6px"],
+            .slide div[style*="border-bottom: 4px"] {
+                padding: 0.25rem 0.35rem !important;
+                border-radius: 8px !important;
+            }
+
+            .slide div[style*="border-radius: 24px"] {
+                border-radius: 8px !important;
+            }
+
+            .slide div[style*="border-radius: 30px"],
+            .slide div[style*="border-radius: 40px"],
+            .slide div[style*="border-radius: 50px"] {
+                border-radius: 10px !important;
+            }
+
+            /* ---- Eliminar todos los márgenes grandes ---- */
+            .slide h2[style*="margin-bottom: 2.5rem"],
+            .slide h2[style*="margin-bottom: 2.2rem"],
+            .slide h2[style*="margin-bottom: 2rem"],
+            .slide h2[style*="margin-bottom: 1.5rem"] {
+                margin-bottom: 0.2rem !important;
+            }
+
+            .slide p[style*="margin-bottom: 2rem"],
+            .slide p[style*="margin-bottom: 2.5rem"],
+            .slide p[style*="margin-bottom: 1.5rem"] {
+                margin-bottom: 0.15rem !important;
+            }
+
+            .slide div[style*="margin-bottom: 2.5rem"],
+            .slide div[style*="margin-bottom: 2.2rem"],
+            .slide div[style*="margin-bottom: 2rem"],
+            .slide div[style*="margin-bottom: 1.5rem"],
+            .slide div[style*="margin-bottom: 1rem"] {
+                margin-bottom: 0.2rem !important;
+            }
+
+            .slide div[style*="margin-top: 2rem"],
+            .slide div[style*="margin-top: 2.5rem"],
+            .slide div[style*="margin-top: 3rem"],
+            .slide div[style*="margin-top: 1.5rem"],
+            .slide div[style*="margin-top: 1rem"] {
+                margin-top: 0.15rem !important;
+            }
+
+            /* ---- Emojis / iconos muy reducidos ---- */
+            .slide span[style*="font-size: 2.5rem"],
+            .slide span[style*="font-size: 2.8rem"],
+            .slide span[style*="font-size: 3rem"] {
+                font-size: 0.9rem !important;
+            }
+
+            .slide span[style*="font-size: 4rem"],
+            .slide span[style*="font-size: 5rem"] {
+                font-size: 1.2rem !important;
+            }
+
+            .slide span[style*="font-size: 2rem"] {
+                font-size: 0.8rem !important;
+            }
+
+            .slide span[style*="font-size: 1.8rem"] {
+                font-size: 0.75rem !important;
+            }
+
+            .slide span[style*="font-size: 1.6rem"] {
+                font-size: 0.7rem !important;
+            }
+
+            /* ---- Imágenes / avatares ---- */
+            .slide img[style*="width: 55px"] {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            .slide img[style*="width: 60px"] {
+                width: 30px !important;
+                height: 30px !important;
+            }
+
+            .slide img[style*="width: 50px"] {
+                width: 25px !important;
+                height: 25px !important;
+            }
+
+            .slide img[style*="width: 110px"] {
+                width: 45px !important;
+                height: 45px !important;
+            }
+
+            .slide img[style*="width: 70px"] {
+                width: 30px !important;
+                height: 30px !important;
+            }
+
+            .slide img[style*="width: 150px"] {
+                width: 55px !important;
+                height: 55px !important;
+            }
+
+            /* ---- Cover (slide 0) ---- */
+            .slide[data-slide="0"] img[alt="Logo UC"],
+            .slide[data-slide="0"] img[alt="Logo Postgrado"] {
+                width: 30px !important;
+            }
+
+            .slide[data-slide="0"] div[style*="top: 15%"] {
+                top: 3% !important;
+            }
+
+            .slide[data-slide="0"] p[style*="letter-spacing"] {
+                margin-bottom: 0.3rem !important;
+                font-size: 0.5rem !important;
+            }
+
+            .slide[data-slide="0"] div[style*="margin: 1.5rem"] {
+                margin: 0.3rem 0 !important;
+            }
+
+            /* ---- Slide 1: 6 cards — ocultar citas/etiquetas, comprimir ---- */
+            .slide[data-slide="1"] .fundamento-item span[style*="font-style: italic"],
+            .slide[data-slide="1"] .fundamento-item span[style*="margin-top: 0.8rem"],
+            .slide[data-slide="1"] div[style*="border: 1px dashed"] {
+                display: none !important;
+            }
+
+            .slide[data-slide="1"] .fundamento-item div[style*="margin-bottom: 0.8rem"] {
+                margin-bottom: 0.1rem !important;
+            }
+
+            .slide[data-slide="1"] .fundamento-item {
+                padding: 0.2rem 0.3rem !important;
+            }
+
+            .slide[data-slide="1"] div[style*="display: inline-block"][style*="border-radius: 30px"] {
+                display: none !important;
+            }
+
+            /* ---- Slide 2: Interrogante ---- */
+            .slide[data-slide="2"] div[style*="margin-bottom: 2.2rem"][style*="text-align: center"] {
+                margin-bottom: 0.15rem !important;
+            }
+
+            .slide[data-slide="2"] div[style*="border-radius: 30px"][style*="padding: 2rem"] {
+                padding: 0.4rem 0.6rem !important;
+            }
+
+            .slide[data-slide="2"] div[style*="padding: 1.3rem 1.8rem"] {
+                padding: 0.3rem 0.5rem !important;
+            }
+
+            /* ---- Slide 3: Relevancia ---- */
+            .slide[data-slide="3"] div[style*="padding: 1.8rem 1.5rem"] {
+                padding: 0.3rem 0.4rem !important;
+            }
+
+            /* ---- Slide 4: Timeline ---- */
+            .slide[data-slide="4"] div[style*="flex: 0 1 180px"] {
+                flex: 0 1 85px !important;
+                min-width: 85px !important;
+                max-width: 120px !important;
+                padding: 0.25rem 0.2rem !important;
+            }
+
+            .slide[data-slide="4"] span[style*="border-radius: 30px"] {
+                font-size: 0.55rem !important;
+                padding: 0.1rem 0.3rem !important;
+                margin-bottom: 0.2rem !important;
+            }
+
+            .slide[data-slide="4"] div[style*="border: 1px dashed"] {
+                display: none !important;
+            }
+
+            /* ---- Slide 5: Fundamentos — 2 columnas, comprimir filas ---- */
+            .slide[data-slide="5"] div[style*="gap: 1.2rem"] {
+                gap: 0.2rem !important;
+            }
+
+            .slide[data-slide="5"] div[style*="gap: 2rem"] {
+                gap: 0.4rem !important;
+            }
+
+            .slide[data-slide="5"] div[style*="border: 1px solid"] {
+                padding: 0.2rem 0.3rem !important;
+            }
+
+            .slide[data-slide="5"] div[style*="flex-wrap: wrap"][style*="gap: 0.5rem"] {
+                gap: 0.2rem !important;
+            }
+
+            .slide[data-slide="5"] p[style*="font-style: italic"] {
+                display: none !important;
+            }
+
+            .slide[data-slide="5"] div[style*="border: 1px dashed"] {
+                display: none !important;
+            }
+
+            /* ---- Slide 6: Aporía del tiempo — 2 columnas ---- */
+            .slide[data-slide="6"] div[style*="gap: 1.8rem"] {
+                gap: 0.3rem !important;
+            }
+
+            .slide[data-slide="6"] p[style*="font-style: italic"] {
+                font-size: 0.5rem !important;
+            }
+
+            /* ---- Slide 7: Camino metodológico ---- */
+            .slide[data-slide="7"] div[style*="padding: 1.8rem 2.2rem"] {
+                padding: 0.3rem 0.5rem !important;
+                border-radius: 12px !important;
+                gap: 0.4rem !important;
+            }
+
+            .slide[data-slide="7"] div[style*="padding: 1.8rem 1.2rem"] {
+                padding: 0.25rem 0.4rem !important;
+            }
+
+            .slide[data-slide="7"] p[style*="font-style: italic"] {
+                font-size: 0.45rem !important;
+            }
+
+            /* ---- Slide 8: Ipseidad — MUCHO contenido ---- */
+            .slide[data-slide="8"]>div {
+                padding: 0.1rem 0.3rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="flex: 1 1 200px"] {
+                flex: 1 1 100px !important;
+                padding: 0.2rem 0.3rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="flex: 2 1 320px"] {
+                flex: 2 1 160px !important;
+                padding: 0.2rem 0.3rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="repeat(2, 1fr)"] {
+                gap: 0.2rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="border-bottom: 4px"] {
+                padding: 0.15rem 0.25rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="border: 1px solid #60a5fa60"] {
+                padding: 0.15rem 0.3rem !important;
+            }
+
+            .slide[data-slide="8"] div[style*="border: 1px solid #60a5fa"][style*="border-radius: 20px"],
+            .slide[data-slide="8"] div[style*="border-radius: 20px"][style*="border: 1px solid"] {
+                padding: 0.15rem 0.3rem !important;
+            }
+
+            .slide[data-slide="8"] h3[style*="margin: 0.5rem"] {
+                margin: 0.1rem 0 !important;
+            }
+
+            /* ---- Slide 9: Triple Mímesis ---- */
+            .slide[data-slide="9"] div[style*="gap: 1.5rem"][style*="flex-wrap"] {
+                gap: 0.2rem !important;
+                padding: 0.2rem 0.3rem !important;
+            }
+
+            .slide[data-slide="9"] div[style*="border: 1px solid #8b5cf6"][style*="border-radius: 50px"] {
+                padding: 0.2rem 0.5rem !important;
+                border-radius: 10px !important;
+            }
+
+            .slide[data-slide="9"] .zoomable-image {
+                flex: 0 0 80px !important;
+                padding: 0.3rem !important;
+            }
+
+            .slide[data-slide="9"] div[style*="min-width: 250px"] {
+                min-width: 120px !important;
+            }
+
+            /* ---- Slide 10: Inmersión — 7 cards en 2 filas ---- */
+            .slide[data-slide="10"] div[style*="gap: 1.5rem"] {
+                gap: 0.25rem !important;
+            }
+
+            .slide[data-slide="10"] p[style*="font-style: italic"] {
+                display: none !important;
+            }
+
+            /* ---- Slide 11: Mímesis II ---- */
+            .slide[data-slide="11"] div[style*="flex: 1 1 250px"] {
+                flex: 1 1 120px !important;
+            }
+
+            .slide[data-slide="11"] div[style*="flex: 1 1 180px"] {
+                flex: 1 1 90px !important;
+            }
+
+            .slide[data-slide="11"] .zoomable-image {
+                max-width: 100px !important;
+                padding: 0.2rem !important;
+            }
+
+            .slide[data-slide="11"] span[style*="font-size: 3.5rem"] {
+                font-size: 1rem !important;
+            }
+
+            /* ---- Slide 12: Arquitectura ---- */
+            .slide[data-slide="12"] div[style*="padding: 1.8rem 1.2rem"] {
+                padding: 0.3rem 0.35rem !important;
+            }
+
+            .slide[data-slide="12"] div[style*="justify-content: center"][style*="gap: 2rem"] {
+                gap: 0.3rem !important;
+                margin-bottom: 0.1rem !important;
+            }
+
+            .slide[data-slide="12"] div[style*="padding: 1.5rem 2rem"] {
+                padding: 0.25rem 0.5rem !important;
+            }
+
+            /* ---- Slide 13: Contemplación ---- */
+            .slide[data-slide="13"] div[style*="flex: 0 1 250px"] {
+                flex: 0 1 100px !important;
+            }
+
+            .slide[data-slide="13"] .zoomable-image {
+                max-width: 90px !important;
+                padding: 0.3rem !important;
+            }
+
+            .slide[data-slide="13"] div[style*="padding: 1.2rem 1.8rem"] {
+                padding: 0.2rem 0.4rem !important;
+            }
+
+            /* ---- Slide 14: Visualización Síntesis — 3 big zoomables ---- */
+            .slide[data-slide="14"] div[style*="flex: 1 1 280px"] {
+                flex: 1 1 110px !important;
+                max-width: 170px !important;
+            }
+
+            .slide[data-slide="14"] .zoomable-image {
+                padding: 0.4rem 0.3rem !important;
+            }
+
+            .slide[data-slide="14"] div[style*="gap: 2rem"] {
+                gap: 0.4rem !important;
+            }
+
+            /* ---- Slide 15: Macrotejidos — muchos thumbnails ---- */
+            .slide[data-slide="15"] div[style*="flex: 1 1 160px"] {
+                flex: 1 1 70px !important;
+                max-width: 100px !important;
+            }
+
+            .slide[data-slide="15"] .zoomable-image {
+                padding: 0.2rem 0.15rem !important;
+            }
+
+            .slide[data-slide="15"] span[style*="font-size: 3.5rem"] {
+                font-size: 0.8rem !important;
+            }
+
+            .slide[data-slide="15"] h3[style*="margin-bottom: 1rem"] {
+                margin-bottom: 0.1rem !important;
+                font-size: 0.6rem !important;
+            }
+
+            .slide[data-slide="15"] p[style*="font-weight: 600"] {
+                font-size: 0.4rem !important;
+                margin-top: 0.1rem !important;
+            }
+
+            .slide[data-slide="15"] p[style*="margin-bottom: 2rem"] {
+                margin-bottom: 0.1rem !important;
+            }
+
+            .slide[data-slide="15"] div[style*="gap: 1.5rem"] {
+                gap: 0.3rem !important;
+            }
+
+            .slide[data-slide="15"] div[style*="margin-bottom: 3rem"] {
+                margin-bottom: 0.15rem !important;
+            }
+
+            /* ---- Slide 16: Refiguraciones ---- */
+            .slide[data-slide="16"] div[style*="minmax(280px"] {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)) !important;
+                gap: 0.2rem !important;
+            }
+
+            .slide[data-slide="16"] p[style*="margin-bottom: 2rem"] {
+                margin-bottom: 0.1rem !important;
+            }
+
+            .slide[data-slide="16"] div[style*="text-align: right"] {
+                display: none !important;
+            }
+
+            .slide[data-slide="16"] p[style*="margin-top: 2rem"] {
+                display: none !important;
+            }
+
+            /* ---- Slide 17: Cierre ---- */
+            .slide[data-slide="17"] div[style*="gap: 3rem"] {
+                gap: 0.5rem !important;
+                padding: 0.5rem 1rem !important;
+                border-radius: 16px !important;
+            }
+
+            .slide[data-slide="17"] div[style*="min-width: 300px"] {
+                min-width: 140px !important;
+            }
+
+            .slide[data-slide="17"] p[style*="font-size: 1.8rem"] {
+                font-size: 0.8rem !important;
+            }
+
+            .slide[data-slide="17"] div[style*="margin-top: 3rem"] {
+                margin-top: 0.3rem !important;
+                padding: 0.3rem 0.8rem !important;
+            }
+
+            .slide[data-slide="17"] span[style*="font-size: 4rem"] {
+                font-size: 1.2rem !important;
+            }
+
+            /* ---- Slide 18: Referencias ---- */
+            .slide[data-slide="18"] div[style*="max-height: 60vh"] {
+                max-height: 55vh !important;
+                padding: 0.4rem !important;
+                overflow-y: auto !important;
+            }
+
+            /* Solo Referencias tiene scroll permitido */
+            .slide[data-slide="18"]>div {
+                overflow-y: auto !important;
+            }
+
+            /* ---- Navegación compacta ---- */
+            .nav-arrow {
+                width: 22px;
+                height: 36px;
+                border-radius: 6px;
+            }
+
+            .nav-arrow svg {
+                width: 14px;
+                height: 14px;
+            }
+
+            .nav-arrow.prev {
+                left: 2px;
+            }
+
+            .nav-arrow.next {
+                right: 2px;
+            }
+
+            .nav-dots {
+                bottom: 3px;
+                gap: 4px;
+                padding: 3px 8px;
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.6);
+            }
+
             .nav-dot {
-                width: clamp(0.4rem, 1vh, 0.8rem) !important;
-                height: clamp(0.4rem, 1vh, 0.8rem) !important;
+                width: 6px;
+                height: 6px;
+            }
+
+            .nav-dot.active {
+                transform: scale(1.3);
             }
 
             .slide-counter {
-                bottom: 0.2rem !important;
-                right: 0.5rem !important;
-                font-size: clamp(0.5rem, 1.5vh, 0.8rem) !important;
-                padding: 0.1rem 0.4rem !important;
+                bottom: 3px;
+                right: 6px;
+                font-size: 0.55rem;
+                padding: 2px 6px;
             }
 
             .progress-bar {
-                height: 0.2rem !important;
+                height: 2px;
+            }
+
+            /* ---- Etiquetas / badges ---- */
+            .slide span[style*="background: #1e3a5f"] {
+                font-size: 0.55rem !important;
+                padding: 0.05rem 0.35rem !important;
+            }
+
+            /* ---- Flex gaps ---- */
+            .slide div[style*="display: flex"][style*="gap: 1.5rem"] {
+                gap: 0.25rem !important;
+            }
+
+            .slide div[style*="display: flex"][style*="gap: 2rem"] {
+                gap: 0.3rem !important;
+            }
+
+            .slide div[style*="display: flex"][style*="gap: 3rem"] {
+                gap: 0.3rem !important;
+            }
+
+            .slide div[style*="display: flex"][style*="gap: 1.2rem"] {
+                gap: 0.2rem !important;
+            }
+
+            .slide div[style*="display: flex"][style*="gap: 1rem"] {
+                gap: 0.2rem !important;
+            }
+
+            .slide div[style*="display: flex"][style*="gap: 0.8rem"] {
+                gap: 0.15rem !important;
+            }
+
+            /* Min-width flex containers */
+            .slide div[style*="min-width: 260px"],
+            .slide div[style*="min-width: 300px"] {
+                min-width: 100px !important;
+            }
+
+            .slide div[style*="min-width: 250px"] {
+                min-width: 90px !important;
+            }
+
+            /* Zoomable images compactas */
+            .zoomable-image {
+                padding: 0.2rem !important;
             }
         }
 
